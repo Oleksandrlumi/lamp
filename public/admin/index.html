@@ -35,6 +35,7 @@
         <button type="button" data-tab="products" class="is-active">Товари</button>
         <button type="button" data-tab="settings">Ціни й доставка</button>
         <button type="button" data-tab="orders">Замовлення</button>
+        <button type="button" data-tab="messages">Питання <span class="count" id="messageCount" hidden></span></button>
         <button type="button" data-tab="backup">Резервна копія</button>
         <button type="button" data-tab="security">Безпека</button>
       </nav>
@@ -125,6 +126,11 @@
     <section class="panel" data-panel="orders" hidden>
       <div class="panel__head"><h2>Замовлення</h2></div>
       <div class="table-wrap"><table class="table" id="orderTable"></table></div>
+    </section>
+
+    <section class="panel" data-panel="messages" hidden>
+      <div class="panel__head"><h2>Питання</h2><p class="hint">Питання з форми внизу сайту. «Відповісти» відкриває вашу пошту з адресою клієнта.</p></div>
+      <div class="messages" id="messageList"></div>
     </section>
   </div>
 

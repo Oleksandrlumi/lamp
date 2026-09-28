@@ -288,6 +288,34 @@ p { margin: 0; }
 .faq details[open] summary::after { transform: rotate(45deg); }
 .faq details p { padding: 0 0 28px; color: var(--ink-2); max-width: 46em; }
 
+/* ---------- Ask a question ---------- */
+.ask {
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px clamp(32px, 6vw, 96px);
+  margin-top: clamp(56px, 7vw, 96px); padding-top: clamp(32px, 4vw, 48px); border-top: 1px solid var(--ink);
+  scroll-margin-top: 80px;
+}
+.ask__title { margin: 0 0 14px; font-family: var(--serif); font-weight: 400; font-size: clamp(30px, 3.4vw, 48px); line-height: 1.05; }
+.ask__lead { margin: 0; color: var(--ink-2); max-width: 26em; }
+.ask__fields { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px 12px; }
+.field textarea {
+  width: 100%; min-height: 140px; padding: 13px 14px; border-radius: 0; resize: vertical;
+  background: var(--paper); border: 1px solid var(--line-strong); color: var(--ink);
+  font: 400 15px/1.5 var(--sans); transition: border-color 0.2s, background 0.4s;
+}
+.field textarea:focus { outline: 0; border-color: var(--ink); }
+.field.has-error textarea { border-color: var(--danger); }
+.ask__hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.ask__foot { display: flex; align-items: center; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; margin-top: 18px; }
+.ask__note { margin: 0; font-size: 13px; color: var(--muted); max-width: 28em; }
+.ask__status { margin: 14px 0 0; font-size: 14px; color: var(--ok); }
+.ask__status:empty { display: none; }
+.ask__status.is-error { color: var(--danger); }
+@media (max-width: 860px) {
+  .ask { grid-template-columns: 1fr; }
+  .ask .field { grid-column: 1 / -1; }
+  .ask__foot .btn { width: 100%; }
+}
+
 /* ---------- Footer ---------- */
 .footer { margin-top: clamp(100px, 14vw, 200px); background: var(--footer-bg); color: var(--footer-ink); transition: background-color 0.8s var(--ease); padding: 64px var(--gutter) 28px; overflow: hidden; }
 .footer__cols { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 32px; max-width: 1560px; margin: 0 auto; font-size: 14px; }

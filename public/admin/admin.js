@@ -68,6 +68,7 @@ async function showApp() {
   $('#loginView').hidden = true;
   $('#appView').hidden = false;
   await loadCatalog();
+  api('/messages').then(updateMessageCount).catch(() => {});
 }
 
 $('#loginForm').addEventListener('submit', async (e) => {
@@ -102,6 +103,7 @@ $$('[data-tab]').forEach((b) =>
     $$('[data-tab]').forEach((x) => x.classList.toggle('is-active', x === b));
     $$('[data-panel]').forEach((p) => (p.hidden = p.dataset.panel !== b.dataset.tab));
     if (b.dataset.tab === 'orders') loadOrders().catch(fail);
+    if (b.dataset.tab === 'messages') loadMessages().catch(fail);
     if (b.dataset.tab === 'settings') renderSettings();
     if (b.dataset.tab === 'security' || b.dataset.tab === 'backup') loadTwoFactor().catch(fail);
   }),
@@ -354,6 +356,58 @@ async function loadOrders() {
     ? `<thead><tr><th>Замовлення</th><th>Клієнт</th><th>Адреса</th><th>Товари</th><th>Сума</th></tr></thead><tbody>${rows}</tbody>`
     : '<tbody><tr><td>Замовлень поки немає.</td></tr></tbody>';
 }
+
+/* ---------------- Questions ---------------- */
+function updateMessageCount(messages) {
+  const open = messages.filter((m) => !m.done).length;
+  $('#messageCount').textContent = open;
+  $('#messageCount').hidden = !open;
+}
+
+async function loadMessages() {
+  const messages = await api('/messages');
+  updateMessageCount(messages);
+  $('#messageList').innerHTML = messages.length
+    ? messages
+        .map((m) => {
+          const reply = `mailto:${encodeURIComponent(m.email)}?subject=${encodeURIComponent(m.lang === 'en' ? 'Your question to LUMI' : 'Je vraag aan LUMI')}`;
+          return `<article class="message${m.done ? ' is-done' : ''}" data-id="${esc(m.id)}">
+            <header class="message__head">
+              <div><strong>${esc(m.name)}</strong> <span class="muted">${esc(m.email)} · ${esc((m.lang || 'nl').toUpperCase())}</span></div>
+              <span class="muted">${esc(new Date(m.createdAt).toLocaleString('uk-UA'))}</span>
+            </header>
+            <p class="message__text">${esc(m.message)}</p>
+            <div class="message__actions">
+              <a class="btn btn--sm btn--dark" href="${esc(reply)}">Відповісти</a>
+              <button class="btn btn--sm btn--line" type="button" data-done="${m.done ? 'false' : 'true'}">${m.done ? 'Повернути в нові' : 'Позначити як відповіли'}</button>
+              <button class="btn btn--sm btn--danger" type="button" data-delete>Видалити</button>
+              ${m.done ? '<span class="badge badge--ok">Відповіли</span>' : '<span class="badge">Нове</span>'}
+            </div>
+          </article>`;
+        })
+        .join('')
+    : '<p class="muted">Питань поки немає.</p>';
+}
+
+$('#messageList').addEventListener('click', async (e) => {
+  const item = e.target.closest('.message');
+  if (!item) return;
+  const id = item.dataset.id;
+  const doneBtn = e.target.closest('[data-done]');
+  try {
+    if (doneBtn) {
+      await api(`/messages/${id}`, { method: 'PUT', body: { done: doneBtn.dataset.done === 'true' } });
+      await loadMessages();
+    } else if (e.target.closest('[data-delete]')) {
+      if (!confirm('Видалити це питання назавжди?')) return;
+      await api(`/messages/${id}`, { method: 'DELETE' });
+      await loadMessages();
+      toast('Видалено');
+    }
+  } catch (err) {
+    fail(err);
+  }
+});
 
 /* ---------------- Backup ---------------- */
 $('#backupForm').addEventListener('submit', async (e) => {

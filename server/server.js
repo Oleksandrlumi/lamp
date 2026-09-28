@@ -22,6 +22,10 @@ import {
   getOrders,
   saveCatalog,
   addOrder,
+  getMessages,
+  addMessage,
+  updateMessage,
+  deleteMessage,
   audit,
   readAudit,
   listUploads,
@@ -33,7 +37,7 @@ import {
 import { generateSecret, verifyTotp, otpauthUri } from './totp.js';
 import { sanitizeImage, ImageError } from './images.js';
 import { writeZip } from './zip.js';
-import { validateProduct, validateSettings, validateOrder, orderTotals, slugify, ValidationError } from './validate.js';
+import { validateProduct, validateSettings, validateOrder, validateMessage, orderTotals, slugify, ValidationError } from './validate.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 try {
@@ -193,6 +197,25 @@ app.post('/api/orders', rateLimit({ windowMs: 60 * 60 * 1000, max: 20 }), expres
   }
 });
 
+// Contact form. Per-IP limit plus a global hourly cap so a flood of
+// questions can't push real ones out of storage.
+let messageWindow = { start: 0, count: 0 };
+app.post('/api/messages', rateLimit({ windowMs: 60 * 60 * 1000, max: 5 }), express.json({ limit: '8kb' }), async (req, res, next) => {
+  try {
+    if (!sameOrigin(req)) return res.status(403).json({ error: 'Forbidden' });
+    // honeypot: a hidden field only bots fill in — pretend it worked
+    if (req.body?.website) return res.status(201).json({ ok: true });
+    const message = validateMessage(req.body);
+    const now = Date.now();
+    if (now - messageWindow.start > 60 * 60 * 1000) messageWindow = { start: now, count: 0 };
+    if (++messageWindow.count > 60) return res.status(429).json({ error: 'Too many requests' });
+    await addMessage({ id: crypto.randomBytes(8).toString('hex'), createdAt: new Date().toISOString(), ...message, done: false });
+    res.status(201).json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
 /* ---------------- Admin auth ---------------- */
 const admin = express.Router();
 admin.use(noStore);
@@ -264,6 +287,32 @@ admin.get('/session', (req, res) => res.json({ csrf: req.session.csrf }));
 admin.get('/catalog', (req, res) => res.json(getCatalog()));
 
 admin.get('/orders', (req, res) => res.json([...getOrders()].reverse()));
+
+admin.get('/messages', (req, res) => res.json([...getMessages()].reverse()));
+
+const MESSAGE_ID = /^[a-f0-9]{16}$/;
+admin.put('/messages/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!MESSAGE_ID.test(id) || !getMessages().some((m) => m.id === id)) return res.status(404).json({ error: 'Питання не знайдено' });
+    await updateMessage(id, { done: req.body?.done === true });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+admin.delete('/messages/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    if (!MESSAGE_ID.test(id) || !getMessages().some((m) => m.id === id)) return res.status(404).json({ error: 'Питання не знайдено' });
+    await deleteMessage(id);
+    audit({ action: 'message_delete', id, ip: req.ip });
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
 
 admin.post('/products', async (req, res, next) => {
   try {
@@ -424,7 +473,7 @@ admin.post('/2fa/disable', async (req, res, next) => {
   }
 });
 
-// Full backup (catalogue, orders, photos, audit log) as a ZIP download.
+// Full backup (catalogue, orders, questions, photos, audit log) as a ZIP download.
 // It contains customer data, so the password (and 2FA code, if enabled) must
 // be entered again.
 admin.post('/backup', async (req, res, next) => {
@@ -443,6 +492,7 @@ admin.post('/backup', async (req, res, next) => {
       '',
       'catalog.json  products, prices, colours, shipping',
       'orders.json   orders (contains customer personal data - keep this file private)',
+      'messages.json questions from the contact form (personal data)',
       'audit.log     admin activity log',
       'uploads/      product photos',
       '',
@@ -452,6 +502,7 @@ admin.post('/backup', async (req, res, next) => {
       { name: 'README.txt', data: Buffer.from(readme) },
       { name: 'catalog.json', data: Buffer.from(JSON.stringify(getCatalog(), null, 2)) },
       { name: 'orders.json', data: Buffer.from(JSON.stringify(getOrders(), null, 2)) },
+      { name: 'messages.json', data: Buffer.from(JSON.stringify(getMessages(), null, 2)) },
       { name: 'audit.log', load: readAudit },
       ...uploads.map((f) => ({ name: `uploads/${f}`, load: () => fs.readFile(path.join(UPLOAD_DIR, f)) })),
     ]);

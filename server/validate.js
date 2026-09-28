@@ -135,3 +135,25 @@ export function orderTotals(items, country, firstOrder, catalog) {
   const total = round2(subtotal - discount + shipping);
   return { subtotal, discount, shipping, total, vat: round2(total - total / 1.21) };
 }
+
+/* ---------------- Contact form ---------------- */
+
+export function validateMessage(input) {
+  if (!input || typeof input !== 'object') fail('Invalid message');
+  const email = str(input.email, 'email', { min: 3, max: 254 }).toLowerCase();
+  if (!EMAIL.test(email)) fail('Invalid email');
+  if (typeof input.message !== 'string') fail('Invalid message');
+  // keep line breaks, drop other control characters, limit empty lines
+  const message = input.message
+    .replace(/\r\n?/g, '\n')
+    .replace(/[\u0000-\u0009\u000b-\u001f\u007f]/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  if (message.length < 5 || message.length > 2000) fail('Invalid message');
+  return {
+    name: str(input.name, 'name', { min: 1, max: 80 }),
+    email,
+    message,
+    lang: LANGS.includes(input.lang) ? input.lang : 'nl',
+  };
+}

@@ -16,12 +16,13 @@ Lettertypen staan lokaal in `public/assets/fonts/` (geen Google Fonts — pretti
 - **Gratis verzending in Nederland**; vaste tarieven voor BE, DE, LU, FR, AT (aan te passen in het adminpaneel).
 - **Twee talen**: Nederlands (standaard) en Engels. Het adminpaneel is in het Oekraïens.
 - **Lichtcursor**: een warme gloed volgt de muis (sterker in de nachtmodus) en licht de lampfoto's aan; uit op touchscreens en bij 'verminderde beweging'.
+- **Vraag stellen**: onder de veelgestelde vragen staat een formulier (naam, e-mail, vraag). Vragen verschijnen in het adminpaneel onder *Питання* (met teller voor nieuwe vragen, knop *Відповісти* opent je mail). Beschermd met een verborgen spamveld, max. 5 vragen per IP per uur en 60 in totaal per uur; de laatste 2000 vragen worden bewaard.
 - **Eigen foutpagina's**: 404 ("Hier is het licht uit" — klik op de lamp om het licht aan te doen) en 500 ("Even geen stroom").
 - Winkelmand blijft bewaard (localStorage), responsive tot mobiel.
 
 ## Adminpaneel
 
-Op `/admin` beheer je producten, prijzen, foto's, verzendkosten en zie je bestellingen.
+Op `/admin` beheer je producten, prijzen, foto's, verzendkosten en zie je bestellingen en vragen van klanten.
 
 **Foto's toevoegen:** open een product → *Фото* → upload per kleur (of *Основне* voor alle kleuren) een **dag**-foto (lamp uit) en een **nacht**-foto (lamp aan). Staand formaat 5:6 werkt het mooist.
 
@@ -34,7 +35,7 @@ Op `/admin` beheer je producten, prijzen, foto's, verzendkosten en zie je bestel
 - Bij elke wijziging wordt een back-up van de catalogus bewaard in `data/backups/` (laatste 200). Alle acties staan in `data/audit.log`.
 - **Tweestapsverificatie (2FA)**: in *Безпека* aan te zetten; daarna is naast het wachtwoord een 6-cijferige code uit een authenticator-app nodig (Google/Microsoft Authenticator, 1Password). Een code kan maar één keer gebruikt worden. Telefoon kwijt: zet tijdelijk `ADMIN_2FA_RESET=1` bij de hosting, herstart, log in en verwijder de variabele weer.
 - **Foto's worden opgeschoond**: GPS-locatie, XMP/IPTC, tekstvelden en data achter het einde van het bestand worden verwijderd (de oriëntatie blijft behouden). Kapotte of vermomde bestanden worden geweigerd.
-- **Volledige back-up downloaden** (*Резервна копія*): ZIP met catalogus, bestellingen, foto's en logboek. Vraagt opnieuw om wachtwoord (en 2FA-code). Het 2FA-geheim en `.env` zitten er nooit in. Terugzetten: server stoppen, bestanden in `DATA_DIR` plaatsen, server starten.
+- **Volledige back-up downloaden** (*Резервна копія*): ZIP met catalogus, bestellingen, vragen, foto's en logboek. Vraagt opnieuw om wachtwoord (en 2FA-code). Het 2FA-geheim en `.env` zitten er nooit in. Terugzetten: server stoppen, bestanden in `DATA_DIR` plaatsen, server starten.
 - `audit.log` wordt bij 5 MB geroteerd.
 - Prijzen en de eerste-bestelling-korting worden bij een bestelling altijd op de server berekend.
 

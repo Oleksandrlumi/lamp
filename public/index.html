@@ -106,6 +106,27 @@
         <details><summary data-i18n="faq.3.q"></summary><p data-i18n="faq.3.a"></p></details>
         <details><summary data-i18n="faq.4.q"></summary><p data-i18n="faq.4.a"></p></details>
       </div>
+
+      <div class="ask" id="contact">
+        <div class="ask__intro">
+          <h3 class="ask__title" data-i18n-html="ask.title"></h3>
+          <p class="ask__lead" data-i18n="ask.lead"></p>
+        </div>
+        <form class="ask__form" id="askForm" novalidate>
+          <div class="ask__fields">
+            <label class="field"><span data-i18n="ask.name"></span><input name="name" autocomplete="name" maxlength="80" required><em class="field__error"></em></label>
+            <label class="field"><span data-i18n="co.email"></span><input name="email" type="email" autocomplete="email" maxlength="254" required><em class="field__error"></em></label>
+            <label class="field field--full"><span data-i18n="ask.message"></span><textarea name="message" rows="5" minlength="5" maxlength="2000" required></textarea><em class="field__error"></em></label>
+            <!-- honeypot for bots: hidden from people and screen readers -->
+            <label class="ask__hp" aria-hidden="true">Website<input name="website" tabindex="-1" autocomplete="off"></label>
+          </div>
+          <div class="ask__foot">
+            <p class="ask__note" data-i18n="ask.note"></p>
+            <button class="btn btn--dark" type="submit" data-i18n="ask.send"></button>
+          </div>
+          <p class="ask__status" id="askStatus" role="status"></p>
+        </form>
+      </div>
     </section>
   </main>
 
@@ -120,7 +141,7 @@
       <div>
         <p class="footer__head" data-i18n="footer.help"></p>
         <a href="#faq" data-i18n="footer.shipping"></a>
-        <a href="mailto:hello@lumi.example" data-i18n="footer.contact"></a>
+        <a href="#contact" data-i18n="footer.contact"></a>
       </div>
     </div>
     <img class="footer__mark" src="assets/logo-lamp.webp" alt="" width="640" height="402" loading="lazy">

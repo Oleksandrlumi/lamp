@@ -9,13 +9,16 @@ export const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
 const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 const CATALOG = path.join(DATA_DIR, 'catalog.json');
 const ORDERS = path.join(DATA_DIR, 'orders.json');
+const MESSAGES = path.join(DATA_DIR, 'messages.json');
 const AUDIT = path.join(DATA_DIR, 'audit.log');
 const SECURITY = path.join(DATA_DIR, 'security.json'); // 2FA secret — never included in backups
 const MAX_BACKUPS = 200;
+const MAX_MESSAGES = 2000; // oldest questions are dropped beyond this
 const MAX_AUDIT_BYTES = 5 * 1024 * 1024; // rotate audit.log at 5 MB (keeps one old file)
 
 let catalog;
 let orders;
+let messages;
 let queue = Promise.resolve();
 
 // Serialise all writes so concurrent requests can't corrupt a file.
@@ -48,6 +51,7 @@ export async function initStore() {
     await syncColours(seed.colors);
   }
   orders = await readJson(ORDERS, []);
+  messages = await readJson(MESSAGES, []);
 }
 
 // The colour palette is defined in code (seed-catalog.json). When it changes,
@@ -72,6 +76,7 @@ async function syncColours(colors) {
 
 export const getCatalog = () => catalog;
 export const getOrders = () => orders;
+export const getMessages = () => messages;
 
 async function backupCatalog() {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -93,6 +98,17 @@ export const addOrder = (order) =>
     await writeAtomic(ORDERS, next);
     orders = next;
   });
+
+// Customer questions from the contact form.
+const saveMessages = (fn) =>
+  serial(async () => {
+    const next = fn(messages).slice(-MAX_MESSAGES);
+    await writeAtomic(MESSAGES, next);
+    messages = next;
+  });
+export const addMessage = (message) => saveMessages((list) => [...list, message]);
+export const updateMessage = (id, patch) => saveMessages((list) => list.map((m) => (m.id === id ? { ...m, ...patch } : m)));
+export const deleteMessage = (id) => saveMessages((list) => list.filter((m) => m.id !== id));
 
 export async function audit(entry) {
   try {

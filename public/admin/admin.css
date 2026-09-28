@@ -29,7 +29,7 @@ a { color: inherit; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 12px 20px; border: 1px solid var(--ink); background: transparent;
-  font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+  font-size: 12px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; text-decoration: none;
 }
 .btn--dark { background: var(--ink); color: var(--paper); }
 .btn--dark:hover { background: var(--ink-2); }
@@ -130,3 +130,13 @@ a { color: inherit; }
 .tfa-setup ol { padding-left: 20px; display: grid; gap: 10px; margin: 0 0 12px; }
 .tfa-secret { display: block; margin: 8px 0 4px; padding: 10px 12px; background: var(--paper); border: 1px solid var(--line-strong); font: 600 16px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.06em; word-break: break-all; }
 code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.95em; }
+
+/* Questions */
+.count { display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 4px; font-size: 11px; line-height: 16px; text-align: center; background: var(--ink); color: var(--paper); border-radius: 9px; }
+.messages { display: grid; gap: 12px; }
+.message { padding: 18px 20px; border: 1px solid var(--line); background: var(--surface); }
+.message.is-done { opacity: 0.6; }
+.message__head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.message__head .muted, .messages > .muted { color: var(--muted); font-size: 12px; }
+.message__text { margin: 12px 0 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.message__actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }

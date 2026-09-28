@@ -475,6 +475,57 @@ onLangChange(() => {
   if (checkoutDialog.open) renderSummary();
 });
 
+/* ---------------- Contact form ---------------- */
+const askForm = $('#askForm');
+const askField = (n) => askForm.elements[n];
+const askStatus = (key, error = false) => {
+  const el = $('#askStatus');
+  el.textContent = key ? t(key) : '';
+  el.classList.toggle('is-error', error);
+};
+$$('input, textarea', askForm).forEach((i) => i.addEventListener('input', () => clearError(i)));
+
+let asking = false;
+askForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (asking) return;
+  const v = (n) => askField(n).value.trim();
+  let first = null;
+  const check = (name, ok, key) => {
+    clearError(askField(name));
+    if (ok) return;
+    showError(askField(name), t(key));
+    first ??= askField(name);
+  };
+  check('name', v('name'), 'ask.err.name');
+  check('email', /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v('email')), 'ask.err.email');
+  check('message', v('message').length >= 5, 'ask.err.message');
+  if (first) return first.focus();
+
+  const button = $('button[type=submit]', askForm);
+  asking = true;
+  button.disabled = true;
+  button.textContent = t('ask.sending');
+  askStatus('');
+  try {
+    const res = await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: v('name'), email: v('email'), message: v('message'), website: askField('website').value, lang: getLang() }),
+    });
+    if (res.status === 429) return askStatus('ask.tooMany', true);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    askForm.reset();
+    askStatus('ask.sent');
+  } catch {
+    askStatus('ask.error', true);
+  } finally {
+    asking = false;
+    button.disabled = false;
+    button.textContent = t('ask.send');
+  }
+});
+
 /* ---------------- Misc ---------------- */
 // In-page links scroll smoothly without leaving #top / #faq in the address bar.
 document.addEventListener('click', (e) => {
