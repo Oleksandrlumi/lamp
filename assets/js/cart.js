@@ -1,5 +1,5 @@
 // Cart state, persistence and pricing rules.
-import { productById, unitPrice } from './catalog.js';
+import { productById, colorById, unitPrice } from './catalog.js';
 
 export const FIRST_ORDER_DISCOUNT = 0.1;
 
@@ -24,7 +24,7 @@ function write(key, value) {
   } catch {}
 }
 
-let items = read(CART_KEY, []).filter((i) => productById(i.productId));
+let items = read(CART_KEY, []).filter((i) => productById(i.productId) && colorById(i.colorId));
 
 function emit() {
   write(CART_KEY, items);
@@ -35,11 +35,11 @@ export const onCartChange = (fn) => listeners.add(fn);
 export const getItems = () => items;
 export const itemCount = () => items.reduce((n, i) => n + i.qty, 0);
 
-export function addItem({ productId, color, colorName, size, qty }) {
-  const key = `${productId}|${color.toLowerCase()}|${size}`;
+export function addItem({ productId, colorId, size, qty }) {
+  const key = `${productId}|${colorId}|${size}`;
   const existing = items.find((i) => i.key === key);
   if (existing) existing.qty = Math.min(20, existing.qty + qty);
-  else items = [...items, { key, productId, color, colorName, size, qty }];
+  else items = [...items, { key, productId, colorId, size, qty }];
   emit();
 }
 

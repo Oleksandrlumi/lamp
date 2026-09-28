@@ -1,4 +1,4 @@
-import { PRODUCTS, COLORS, SIZES, productById, colorById, unitPrice, dimensions } from './catalog.js';
+import { PRODUCTS, COLORS, SIZES, productById, colorById, photoFor, isDark, unitPrice, dimensions } from './catalog.js';
 import { t, setLang, getLang, onLangChange, applyTranslations, money } from './i18n.js';
 import * as cart from './cart.js';
 import { lookupAddress, NL_POSTCODE, formatPostcode } from './postcode.js';
@@ -7,14 +7,22 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-let three = null; // lazily loaded lamp3d module (null when WebGL is unavailable)
+const colourName = (id) => colorById(id)?.name[getLang()] ?? '';
 
-const colourName = (hex) => {
-  const c = COLORS.find((c) => c.hex.toLowerCase() === hex.toLowerCase());
-  return c ? c.name[getLang()] : `${t('cfg.custom')} ${hex.toUpperCase()}`;
-};
-
-const thumb = (product, hex) => (three ? three.renderThumbnail(product, hex) : '');
+// Product image: the photo for this colour if there is one, otherwise a
+// colour panel in the chosen filament colour.
+function visualHtml(product, colorId) {
+  const c = colorById(colorId);
+  const photo = photoFor(product.id, colorId);
+  const no = String(PRODUCTS.indexOf(product) + 1).padStart(2, '0');
+  const cls = ['visual', isDark(c.hex) && 'is-dark', photo && 'has-photo'].filter(Boolean).join(' ');
+  return `<div class="${cls}" style="--c:${c.hex}">
+      ${photo ? `<img src="${esc(photo)}" alt="${esc(product.name)} — ${esc(colourName(colorId))}" loading="lazy">` : ''}
+      <span class="visual__no">N° ${no}</span>
+      <span class="visual__colour">${esc(colourName(colorId))}</span>
+      <span class="visual__name">${esc(product.name)}</span>
+    </div>`;
+}
 
 /* ---------------- Dialogs ---------------- */
 function openDialog(d) {
@@ -27,7 +35,6 @@ function closeDialog(d) {
 $$('dialog').forEach((d) => {
   d.addEventListener('close', () => {
     if (!$$('dialog').some((x) => x.open)) document.body.classList.remove('has-modal');
-    d.dispatchEvent(new Event('closed'));
   });
   // click on backdrop closes
   d.addEventListener('mousedown', (e) => {
@@ -48,62 +55,60 @@ function toast(msg) {
 }
 
 /* ---------------- Swatches ---------------- */
-function renderSwatches(container, selectedHex, onPick, { custom = false, size = '' } = {}) {
-  const sel = selectedHex.toLowerCase();
-  const isCustom = !COLORS.some((c) => c.hex.toLowerCase() === sel);
-  container.innerHTML =
-    COLORS.map(
-      (c) =>
-        `<button type="button" class="swatch" style="--c:${c.hex}" data-hex="${c.hex}" aria-pressed="${c.hex.toLowerCase() === sel}" aria-label="${esc(c.name[getLang()])}" title="${esc(c.name[getLang()])}"></button>`,
-    ).join('') +
-    (custom
-      ? `<label class="swatch swatch--custom" aria-pressed="${isCustom}" title="${esc(t('cfg.custom'))}" ${isCustom ? `style="background:${sel}"` : ''}><input type="color" value="${isCustom ? sel : '#b86f52'}" aria-label="${esc(t('cfg.custom'))}"></label>`
-      : '');
-  if (size) container.classList.add(`swatches--${size}`);
+function renderSwatches(container, selectedId, onPick) {
+  container.innerHTML = COLORS.map(
+    (c) =>
+      `<button type="button" class="swatch" style="--c:${c.hex}" data-color="${c.id}" aria-pressed="${c.id === selectedId}" aria-label="${esc(c.name[getLang()])}" title="${esc(c.name[getLang()])}"></button>`,
+  ).join('');
   container.onclick = (e) => {
-    const b = e.target.closest('button.swatch');
-    if (b) onPick(b.dataset.hex);
+    const b = e.target.closest('[data-color]');
+    if (b) onPick(b.dataset.color);
   };
-  const input = $('input[type=color]', container);
-  if (input) input.oninput = () => onPick(input.value);
 }
 
-/* ---------------- Hero ---------------- */
-const hero = { product: productById('nova'), hex: colorById('terracotta').hex, stage: null };
+/* ---------------- Palette ---------------- */
+let paletteColour = null;
 
-function renderHero() {
-  $('#heroProduct').innerHTML = `${esc(hero.product.name)} <span>${money(hero.product.price)}</span>`;
-  $('#heroColour').textContent = `${t(`type.${hero.product.type}`)} · ${colourName(hero.hex)}`;
-  renderSwatches($('#heroSwatches'), hero.hex, (hex) => {
-    hero.hex = hex;
-    hero.stage?.setColor(hex);
-    $('#heroStage').style.setProperty('--glow', hex);
-    renderHero();
-  });
+function renderPalette() {
+  $('#palette').innerHTML = COLORS.map(
+    (c) =>
+      `<button type="button" class="band${isDark(c.hex) ? ' is-dark' : ''}${c.id === paletteColour ? ' is-active' : ''}" style="--c:${c.hex}" data-color="${c.id}" aria-label="${esc(c.name[getLang()])}">
+        <span class="band__label"><b>${esc(c.name[getLang()])}</b>${c.hex}</span>
+      </button>`,
+  ).join('');
 }
-$('#heroConfigure').addEventListener('click', () => openConfigurator(hero.product.id, hero.hex));
-$('#heroStage').style.setProperty('--glow', hero.hex);
+
+$('#palette').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-color]');
+  if (!b) return;
+  paletteColour = b.dataset.color;
+  PRODUCTS.forEach((p) => (cardColours[p.id] = paletteColour));
+  renderPalette();
+  renderGrid();
+  $$('.card').forEach((el) => el.classList.add('is-in'));
+  $('#collection').scrollIntoView({ behavior: 'smooth' });
+});
 
 /* ---------------- Product grid ---------------- */
-const cardColours = Object.fromEntries(PRODUCTS.map((p) => [p.id, colorById(p.defaultColor).hex]));
+const cardColours = Object.fromEntries(PRODUCTS.map((p) => [p.id, p.defaultColor]));
 
 function renderGrid() {
   const grid = $('#productGrid');
   grid.innerHTML = PRODUCTS.map((p) => {
-    const hex = cardColours[p.id];
+    const d = dimensions(p, 'M');
     return `
       <article class="card reveal" data-id="${p.id}">
-        <button class="card__media" type="button" style="--glow:${hex}" aria-label="${esc(p.name)}">
-          <img alt="${esc(p.name)} — ${esc(colourName(hex))}" src="${thumb(p, hex)}" loading="lazy">
-          <span class="card__badge">${esc(t(`type.${p.type}`))}</span>
+        <button class="card__media" type="button" aria-label="${esc(p.name)} — ${esc(t('card.configure'))}">
+          ${visualHtml(p, cardColours[p.id])}
+          <span class="card__hover">${esc(t('card.configure'))}</span>
         </button>
         <div class="card__body">
           <h3 class="card__name">${esc(p.name)}</h3>
           <p class="card__price"><small>${esc(t('card.from'))}</small>${money(unitPrice(p, 'S'))}</p>
-          <p class="card__tagline">${esc(p.tagline[getLang()])}</p>
+          <p class="card__meta">${esc(t(`type.${p.type}`))} · ${d.height} × ⌀ ${d.diameter} cm</p>
           <div class="card__foot">
-            <div class="swatches swatches--card"></div>
-            <button class="card__cta" type="button">${esc(t('card.configure'))}</button>
+            <div class="swatches"></div>
+            <span class="card__colour">${esc(colourName(cardColours[p.id]))}</span>
           </div>
         </div>
       </article>`;
@@ -112,77 +117,54 @@ function renderGrid() {
   $$('.card', grid).forEach((card) => {
     const p = productById(card.dataset.id);
     const swatchBox = $('.swatches', card);
-    const pick = (hex) => {
-      cardColours[p.id] = hex;
-      const img = $('img', card);
-      img.src = thumb(p, hex);
-      img.alt = `${p.name} — ${colourName(hex)}`;
-      $('.card__media', card).style.setProperty('--glow', hex);
-      renderSwatches(swatchBox, hex, pick);
+    const pick = (id) => {
+      cardColours[p.id] = id;
+      $('.visual', card).outerHTML = visualHtml(p, id);
+      $('.card__colour', card).textContent = colourName(id);
+      renderSwatches(swatchBox, id, pick);
     };
     renderSwatches(swatchBox, cardColours[p.id], pick);
-    const open = () => openConfigurator(p.id, cardColours[p.id]);
-    $('.card__media', card).addEventListener('click', open);
-    $('.card__cta', card).addEventListener('click', open);
+    $('.card__media', card).addEventListener('click', () => openConfigurator(p.id, cardColours[p.id]));
   });
   observeReveal();
 }
 
-/* ---------------- Configurator ---------------- */
-const cfg = { product: null, hex: '', size: 'M', qty: 1, on: true, stage: null };
+/* ---------------- Product detail ---------------- */
+const cfg = { product: null, colorId: '', size: 'M', qty: 1 };
 const cfgDialog = $('#configurator');
 
-function openConfigurator(productId, hex) {
+function openConfigurator(productId, colorId) {
   cfg.product = productById(productId);
-  cfg.hex = hex || colorById(cfg.product.defaultColor).hex;
+  cfg.colorId = colorId || cfg.product.defaultColor;
   cfg.size = 'M';
   cfg.qty = 1;
-  openDialog(cfgDialog);
-  if (three && !cfg.stage) {
-    cfg.stage = new three.LampStage($('#cfgCanvas'), { padding: 1.2 });
-  }
-  cfg.stage?.resize();
-  cfg.stage?.setProduct(cfg.product);
-  cfg.stage?.setColor(cfg.hex);
-  cfg.stage?.setOn(cfg.on);
-  cfg.stage?.start();
   renderConfigurator();
+  openDialog(cfgDialog);
 }
-cfgDialog.addEventListener('closed', () => cfg.stage?.stop());
 
 function renderConfigurator() {
   const p = cfg.product;
   if (!p) return;
   const dims = dimensions(p, cfg.size);
-  $('.configurator__stage').style.setProperty('--glow', cfg.hex);
+  $('#cfgVisual').innerHTML = visualHtml(p, cfg.colorId);
   $('#cfgType').textContent = t(`type.${p.type}`);
   $('#cfgName').textContent = p.name;
   $('#cfgTagline').textContent = p.tagline[getLang()];
   $('#cfgPrice').textContent = money(unitPrice(p, cfg.size));
-  $('#cfgColourName').textContent = colourName(cfg.hex);
+  $('#cfgColourName').textContent = colourName(cfg.colorId);
   $('#cfgDims').textContent = `${dims.height} × ⌀ ${dims.diameter} cm`;
   $('#cfgQty').textContent = cfg.qty;
   $('#cfgTotal').textContent = money(unitPrice(p, cfg.size) * cfg.qty);
 
-  renderSwatches(
-    $('#cfgSwatches'),
-    cfg.hex,
-    (hex) => {
-      cfg.hex = hex;
-      cfg.stage?.setColor(hex);
-      renderConfigurator();
-    },
-    { custom: true },
-  );
+  renderSwatches($('#cfgSwatches'), cfg.colorId, (id) => {
+    cfg.colorId = id;
+    renderConfigurator();
+  });
 
   $('#cfgSizes').innerHTML = SIZES.map((s) => {
     const d = dimensions(p, s.id);
     return `<button type="button" data-size="${s.id}" aria-pressed="${s.id === cfg.size}"><b>${s.id}</b><span>${d.height} cm · ${money(unitPrice(p, s.id))}</span></button>`;
   }).join('');
-
-  const light = $('#cfgLight');
-  light.setAttribute('aria-pressed', String(cfg.on));
-  $('b', light).textContent = t(cfg.on ? 'cfg.on' : 'cfg.off');
 
   const specs = [
     ['spec.dims', `${dims.height} × ⌀ ${dims.diameter} cm`],
@@ -208,14 +190,9 @@ $('#cfgPlus').addEventListener('click', () => {
   cfg.qty = Math.min(20, cfg.qty + 1);
   renderConfigurator();
 });
-$('#cfgLight').addEventListener('click', () => {
-  cfg.on = !cfg.on;
-  cfg.stage?.setOn(cfg.on);
-  renderConfigurator();
-});
 $('#cfgAdd').addEventListener('click', () => {
-  cart.addItem({ productId: cfg.product.id, color: cfg.hex, size: cfg.size, qty: cfg.qty });
-  toast(`${cfg.product.name} · ${colourName(cfg.hex)} — ${t('cfg.added')}`);
+  cart.addItem({ productId: cfg.product.id, colorId: cfg.colorId, size: cfg.size, qty: cfg.qty });
+  toast(`${cfg.product.name} · ${colourName(cfg.colorId)} — ${t('cfg.added')}`);
   const btn = $('#cartOpen');
   btn.classList.remove('bump');
   void btn.offsetWidth;
@@ -237,10 +214,10 @@ function lineHtml(item) {
   const p = productById(item.productId);
   return `
     <div class="line" data-key="${esc(item.key)}">
-      <div class="line__img" style="--glow:${item.color}"><img alt="" src="${thumb(p, item.color)}"></div>
+      <div class="line__img">${visualHtml(p, item.colorId)}</div>
       <div>
         <p class="line__name">${esc(p.name)}</p>
-        <p class="line__meta"><span class="line__dot" style="background:${item.color}"></span>${esc(colourName(item.color))} · ${item.size}</p>
+        <p class="line__meta"><span class="line__dot" style="background:${colorById(item.colorId).hex}"></span>${esc(colourName(item.colorId))} · ${item.size}</p>
         <div class="line__controls">
           <div class="qty"><button type="button" data-act="dec" aria-label="−">−</button><span>${item.qty}</span><button type="button" data-act="inc" aria-label="+">+</button></div>
           <button class="line__remove" type="button" data-act="remove">${esc(t('cart.remove'))}</button>
@@ -266,7 +243,7 @@ function renderCart() {
   const body = $('#cartItems');
   const foot = $('#cartFoot');
   if (!items.length) {
-    body.innerHTML = `<div class="drawer__empty"><p>${esc(t('cart.empty'))}</p><a class="btn btn--ghost" href="#collection" data-close>${esc(t('cart.browse'))}</a></div>`;
+    body.innerHTML = `<div class="drawer__empty"><p>${esc(t('cart.empty'))}</p><a class="btn btn--line" href="#collection" data-close>${esc(t('cart.browse'))}</a></div>`;
     foot.innerHTML = '';
     return;
   }
@@ -275,7 +252,7 @@ function renderCart() {
   foot.innerHTML = `
     <dl class="totals">${totalsHtml(sums, 'NL', true)}</dl>
     <p class="drawer__note">${esc(t('cart.discountNote'))}</p>
-    <button class="btn btn--primary btn--block" type="button" id="toCheckout">${esc(t('cart.checkout'))}</button>`;
+    <button class="btn btn--dark btn--block" type="button" id="toCheckout">${esc(t('cart.checkout'))}</button>`;
   $('#toCheckout').addEventListener('click', () => {
     closeDialog(cartDialog);
     openCheckout();
@@ -330,7 +307,7 @@ function renderSummary() {
     .getItems()
     .map((i) => {
       const p = productById(i.productId);
-      return `<li><img alt="" src="${thumb(p, i.color)}" style="background:radial-gradient(circle at 50% 55%, ${i.color}55, transparent 70%)"><span>${esc(p.name)} × ${i.qty}<small>${esc(colourName(i.color))} · ${i.size}</small></span><b>${money(cart.lineTotal(i))}</b></li>`;
+      return `<li>${visualHtml(p, i.colorId)}<span>${esc(p.name)} × ${i.qty}<small>${esc(colourName(i.colorId))} · ${i.size}</small></span><b>${money(cart.lineTotal(i))}</b></li>`;
     })
     .join('');
   $('#summaryTotals').innerHTML = totalsHtml(sums, country, firstOrder);
@@ -471,7 +448,7 @@ function syncLangButtons() {
 $$('[data-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
 onLangChange(() => {
   syncLangButtons();
-  renderHero();
+  renderPalette();
   renderGrid();
   $$('.reveal').forEach((el) => el.classList.add('is-in'));
   if (cfgDialog.open) renderConfigurator();
@@ -499,30 +476,8 @@ window.addEventListener('scroll', () => $('#nav').classList.toggle('is-scrolled'
 $('#year').textContent = new Date().getFullYear();
 
 /* ---------------- Boot ---------------- */
-async function boot() {
-  applyTranslations();
-  syncLangButtons();
-  updateCartCount();
-  try {
-    const mod = await import('./lamp3d.js');
-    if (mod.webglAvailable()) three = mod;
-  } catch (err) {
-    console.warn('3D preview unavailable', err);
-  }
-  if (three) {
-    hero.stage = new three.LampStage($('#heroCanvas'), {
-      padding: 1.7,
-      // On desktop the info panel overlays the canvas, so lift the lamp above it.
-      shiftY: () => (matchMedia('(max-width: 860px)').matches ? 0 : 0.09),
-    });
-    hero.stage.setProduct(hero.product);
-    hero.stage.setColor(hero.hex);
-    hero.stage.start();
-  } else {
-    document.body.classList.add('no-webgl');
-  }
-  renderHero();
-  renderGrid();
-}
-
-boot();
+applyTranslations();
+syncLangButtons();
+updateCartCount();
+renderPalette();
+renderGrid();
