@@ -37,12 +37,35 @@ async function readJson(file, fallback) {
 export async function initStore() {
   await fs.mkdir(UPLOAD_DIR, { recursive: true, mode: 0o700 });
   await fs.mkdir(BACKUP_DIR, { recursive: true, mode: 0o700 });
+  const seed = JSON.parse(await fs.readFile(path.join(root, 'seed-catalog.json'), 'utf8'));
   catalog = await readJson(CATALOG, null);
   if (!catalog) {
-    catalog = JSON.parse(await fs.readFile(path.join(root, 'seed-catalog.json'), 'utf8'));
+    catalog = seed;
     await writeAtomic(CATALOG, catalog);
+  } else {
+    await syncColours(seed.colors);
   }
   orders = await readJson(ORDERS, []);
+}
+
+// The colour palette is defined in code (seed-catalog.json). When it changes,
+// update stored products: unknown default colours fall back to the first
+// colour and photos for removed colours are dropped.
+async function syncColours(colors) {
+  const ids = new Set(colors.map((c) => c.id));
+  const keepPhotos = (set = {}) => Object.fromEntries(Object.entries(set).filter(([k]) => k === 'default' || ids.has(k)));
+  const products = catalog.products.map((p) => ({
+    ...p,
+    defaultColor: ids.has(p.defaultColor) ? p.defaultColor : colors[0].id,
+    photos: keepPhotos(p.photos),
+    photosNight: keepPhotos(p.photosNight),
+  }));
+  const next = { ...catalog, colors, products };
+  if (JSON.stringify(next) !== JSON.stringify(catalog)) {
+    await backupCatalog();
+    await writeAtomic(CATALOG, next);
+    catalog = next;
+  }
 }
 
 export const getCatalog = () => catalog;

@@ -19,15 +19,6 @@
       }
     },
     {
-      "id": "blush",
-      "hex": "#DDB0A2",
-      "name": {
-        "nl": "Roze klei",
-        "en": "Clay pink",
-        "uk": "Рожева глина"
-      }
-    },
-    {
       "id": "terracotta",
       "hex": "#B8653F",
       "name": {
@@ -37,48 +28,12 @@
       }
     },
     {
-      "id": "ochre",
-      "hex": "#C99A3E",
-      "name": {
-        "nl": "Oker",
-        "en": "Ochre",
-        "uk": "Охра"
-      }
-    },
-    {
       "id": "sage",
       "hex": "#A3AD93",
       "name": {
         "nl": "Salie",
         "en": "Sage",
         "uk": "Шавлія"
-      }
-    },
-    {
-      "id": "forest",
-      "hex": "#46594A",
-      "name": {
-        "nl": "Woud",
-        "en": "Forest",
-        "uk": "Лісовий"
-      }
-    },
-    {
-      "id": "ocean",
-      "hex": "#4A6F87",
-      "name": {
-        "nl": "Oceaan",
-        "en": "Ocean",
-        "uk": "Океан"
-      }
-    },
-    {
-      "id": "midnight",
-      "hex": "#27304A",
-      "name": {
-        "nl": "Middernacht",
-        "en": "Midnight",
-        "uk": "Опівніч"
       }
     },
     {
@@ -158,7 +113,7 @@
       "price": 169,
       "heightCm": 24,
       "diameterCm": 42,
-      "defaultColor": "blush",
+      "defaultColor": "ivory",
       "tagline": {
         "nl": "Een hanglamp als een openvallende bloem, met zes zachte bloembladen.",
         "en": "A pendant like an opening flower, with six soft petals.",
@@ -175,7 +130,7 @@
       "price": 119,
       "heightCm": 34,
       "diameterCm": 18,
-      "defaultColor": "ocean",
+      "defaultColor": "graphite",
       "tagline": {
         "nl": "Een gedraaide zeshoek: strak van dichtbij, vloeiend van een afstand.",
         "en": "A twisted hexagon: crisp up close, fluid from afar.",
@@ -192,7 +147,7 @@
       "price": 179,
       "heightCm": 22,
       "diameterCm": 46,
-      "defaultColor": "ochre",
+      "defaultColor": "sand",
       "tagline": {
         "nl": "Terrassen van licht — een koepel opgebouwd uit gestapelde ringen.",
         "en": "Terraces of light — a dome built from stacked rings.",

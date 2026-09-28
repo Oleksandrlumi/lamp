@@ -7,7 +7,7 @@ Lettertypen staan lokaal in `public/assets/fonts/` (geen Google Fonts — pretti
 ## Functies
 
 - **Dag/nacht-modus** — overdag een lichte site met foto's van de lamp uit; 's avonds (19:00–07:00, of via de knop Dag/Nacht) een donkere site met foto's waarop de lampen branden.
-- **Kleurkeuze uit tien vaste kleuren** — via de kleurenrij boven de collectie (toont alle lampen in die kleur), per productkaart of in het productvenster.
+- **Kleurkeuze uit vijf vaste kleuren** (Ivoor, Zand, Terracotta, Salie, Grafiet; aan te passen in `server/seed-catalog.json`) — via de kleurenrij boven de collectie (toont alle lampen in die kleur), per productkaart of in het productvenster.
 - **Productfoto's per kleur, voor dag én nacht** (zie hieronder). Zolang er geen foto is, wordt de lamp getoond als een effen kleurvlak (dat 's nachts zacht gloeit).
 - **Maten** S / M / L met eigen prijs en afmetingen.
 - **Adres via postcode**: bij Nederlandse adressen worden straat en plaats automatisch ingevuld op basis van postcode + huisnummer (gratis [PDOK Locatieserver](https://api.pdok.nl/bzk/locatieserver/search/v3_1/ui/), BAG-data, geen API-sleutel). Beschikbare toevoegingen worden als suggestie getoond.

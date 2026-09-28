@@ -44,15 +44,15 @@
 
   <main id="top">
     <section class="intro">
-      <div class="intro__text">
-        <h1 class="intro__title" data-i18n-html="hero.title"></h1>
+      <h1 class="intro__title" data-i18n-html="hero.title"></h1>
+      <div class="intro__side">
         <p class="intro__lead" data-i18n="hero.lead"></p>
+        <ul class="trust">
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="7" cy="17.5" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="17" cy="17.5" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span data-i18n="offer.ship.title"></span></li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span data-i18n="trust.delivery"></span></li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17h6M10 20h4M12 3.5a5.5 5.5 0 0 0-3.2 10c.7.5 1.2 1.3 1.2 2.2V17h4v-1.3c0-.9.5-1.7 1.2-2.2A5.5 5.5 0 0 0 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg><span data-i18n="trust.bulb"></span></li>
+        </ul>
       </div>
-      <ul class="perks">
-        <li><b>€0</b><span data-i18n="offer.ship.title"></span></li>
-        <li><b>3–5</b><span data-i18n="stat.days"></span></li>
-        <li><b>10</b><span data-i18n="perk.colours"></span></li>
-      </ul>
     </section>
 
     <section class="collection" id="collection">
@@ -141,7 +141,11 @@
         </div>
         <button class="btn btn--dark btn--block" type="button" id="cfgAdd"><span data-i18n="cfg.add"></span><span class="btn__sep">—</span><span id="cfgTotal"></span></button>
       </div>
-      <p class="configurator__note" data-i18n="cfg.note"></p>
+      <ul class="trust trust--buy">
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="7" cy="17.5" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="17" cy="17.5" r="1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span data-i18n="offer.ship.title"></span></li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.3"/></svg><span data-i18n="trust.delivery"></span></li>
+          <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 17h6M10 20h4M12 3.5a5.5 5.5 0 0 0-3.2 10c.7.5 1.2 1.3 1.2 2.2V17h4v-1.3c0-.9.5-1.7 1.2-2.2A5.5 5.5 0 0 0 12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg><span data-i18n="trust.bulb"></span></li>
+        </ul>
 
       <details class="specs">
         <summary data-i18n="cfg.specs"></summary>
