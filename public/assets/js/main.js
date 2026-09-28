@@ -476,6 +476,17 @@ onLangChange(() => {
 });
 
 /* ---------------- Misc ---------------- */
+// In-page links scroll smoothly without leaving #top / #faq in the address bar.
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const id = a.getAttribute('href').slice(1);
+  const target = id === 'top' ? null : document.getElementById(id);
+  if (id !== 'top' && !target) return;
+  e.preventDefault();
+  if (target) target.scrollIntoView({ behavior: 'smooth' });
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
+});
 let revealObserver;
 function observeReveal() {
   revealObserver ??= new IntersectionObserver(
@@ -582,3 +593,14 @@ initCursorLight();
 updateCartCount();
 renderPalette();
 renderGrid();
+
+// Arriving with a hash (e.g. /#collection from the 404 page): scroll there once
+// the grid is rendered, then drop the hash from the address bar.
+if (location.hash) {
+  let target = null;
+  try {
+    target = document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  } catch {}
+  history.replaceState(null, '', location.pathname + location.search);
+  if (target) requestAnimationFrame(() => target.scrollIntoView());
+}
