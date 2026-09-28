@@ -167,6 +167,7 @@ const editor = $('#editor');
 const pform = $('#productForm');
 let editing = null; // product id, or null for a new product
 let photos = {};
+let photosNight = {};
 
 editor.addEventListener('click', (e) => {
   if (e.target.closest('[data-close]')) editor.close();
@@ -179,7 +180,6 @@ $('#addProduct').addEventListener('click', () =>
     price: '',
     heightCm: '',
     diameterCm: '',
-    printHours: '',
     defaultColor: catalog.colors[0].id,
     tagline: { nl: '', en: '', uk: '' },
     photos: {},
@@ -190,6 +190,7 @@ $('#addProduct').addEventListener('click', () =>
 function openEditor(p) {
   editing = p.id || null;
   photos = { ...(p.photos || {}) };
+  photosNight = { ...(p.photosNight || {}) };
   $('#editorTitle').textContent = editing ? p.name : 'Новий товар';
   $('#productError').textContent = '';
   $('#defaultColor').innerHTML = catalog.colors.map((c) => `<option value="${esc(c.id)}">${esc(c.name.uk)}</option>`).join('');
@@ -199,7 +200,6 @@ function openEditor(p) {
   f.price.value = p.price;
   f.heightCm.value = p.heightCm;
   f.diameterCm.value = p.diameterCm;
-  f.printHours.value = p.printHours;
   f.defaultColor.value = p.defaultColor;
   f.visible.checked = p.visible !== false;
   for (const l of ['nl', 'en', 'uk']) f[`tagline_${l}`].value = p.tagline?.[l] || '';
@@ -207,21 +207,30 @@ function openEditor(p) {
   editor.showModal();
 }
 
+const photoSet = (mode) => (mode === 'night' ? photosNight : photos);
+
+function photoTile(slot, mode, hex) {
+  const url = photoSet(mode)[slot];
+  const style = `--c:${hex}${url ? `;background-image:url('${url}')` : ''}`;
+  return `<div class="photo__mode" data-mode="${mode}">
+      <div class="photo__img${url ? '' : ' is-empty'}${mode === 'night' ? ' is-night' : ''}" style="${esc(style)}"></div>
+      <div class="photo__actions">
+        <span class="photo__label">${mode === 'night' ? 'Ніч' : 'День'}</span>
+        <label class="link-btn">${url ? 'Замінити' : 'Завантажити'}<input type="file" accept="image/jpeg,image/png,image/webp"></label>
+        ${url ? '<button class="link-btn" type="button" data-remove>Прибрати</button>' : ''}
+      </div>
+    </div>`;
+}
+
 function renderPhotos() {
   const slots = [{ id: 'default', name: 'Основне', hex: '#ddd' }, ...catalog.colors.map((c) => ({ id: c.id, name: c.name.uk, hex: c.hex }))];
   $('#photoGrid').innerHTML = slots
-    .map((s) => {
-      const url = photos[s.id];
-      const style = `--c:${s.hex}${url ? `;background-image:url('${url}')` : ''}`;
-      return `<div class="photo" data-slot="${esc(s.id)}">
-        <div class="photo__img${url ? '' : ' is-empty'}" style="${esc(style)}"></div>
+    .map(
+      (s) => `<div class="photo" data-slot="${esc(s.id)}">
         <strong>${esc(s.name)}</strong>
-        <div class="photo__actions">
-          <label class="link-btn">${url ? 'Замінити' : 'Завантажити'}<input type="file" accept="image/jpeg,image/png,image/webp"></label>
-          ${url ? '<button class="link-btn" type="button" data-remove>Прибрати</button>' : ''}
-        </div>
-      </div>`;
-    })
+        <div class="photo__pair">${photoTile(s.id, 'day', s.hex)}${photoTile(s.id, 'night', s.hex)}</div>
+      </div>`,
+    )
     .join('');
 }
 
@@ -230,12 +239,13 @@ $('#photoGrid').addEventListener('change', async (e) => {
   const file = input?.files?.[0];
   if (!file) return;
   const slot = input.closest('[data-slot]').dataset.slot;
+  const mode = input.closest('[data-mode]').dataset.mode;
   if (file.size > 8 * 1024 * 1024) return toast('Файл завеликий (макс. 8 МБ)', true);
   if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return toast('Лише JPG, PNG або WebP', true);
   try {
     toast('Завантаження…');
     const { url } = await api('/uploads', { method: 'POST', raw: file });
-    photos[slot] = url;
+    photoSet(mode)[slot] = url;
     renderPhotos();
     toast('Фото завантажено — не забудьте зберегти товар');
   } catch (err) {
@@ -245,7 +255,8 @@ $('#photoGrid').addEventListener('change', async (e) => {
 
 $('#photoGrid').addEventListener('click', (e) => {
   if (!e.target.closest('[data-remove]')) return;
-  delete photos[e.target.closest('[data-slot]').dataset.slot];
+  const slot = e.target.closest('[data-slot]').dataset.slot;
+  delete photoSet(e.target.closest('[data-mode]').dataset.mode)[slot];
   renderPhotos();
 });
 
@@ -258,11 +269,11 @@ pform.addEventListener('submit', async (e) => {
     price: f.price.value,
     heightCm: f.heightCm.value,
     diameterCm: f.diameterCm.value,
-    printHours: f.printHours.value,
     defaultColor: f.defaultColor.value,
     visible: f.visible.checked,
     tagline: { nl: f.tagline_nl.value, en: f.tagline_en.value, uk: f.tagline_uk.value },
     photos,
+    photosNight,
   };
   const button = $('button[type=submit]', pform);
   button.disabled = true;

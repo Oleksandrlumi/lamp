@@ -39,13 +39,17 @@ export function validateProduct(input, catalog, { id } = {}) {
   const tagline = {};
   for (const l of LANGS) tagline[l] = str(input.tagline?.[l] ?? '', `Опис (${l.toUpperCase()})`, { max: 300 });
 
-  const photos = {};
-  for (const [key, url] of Object.entries(input.photos || {})) {
-    if (!url) continue;
-    if (key !== 'default' && !colorIds.has(key)) fail(`Фото: невідомий колір ${key}`);
-    if (typeof url !== 'string' || !PHOTO_URL.test(url)) fail('Фото: невірне посилання');
-    photos[key] = url;
-  }
+  // Day photos (lamp off) and night photos (lamp on), per colour or 'default'.
+  const readPhotos = (set) => {
+    const out = {};
+    for (const [key, url] of Object.entries(set && typeof set === 'object' ? set : {})) {
+      if (!url) continue;
+      if (key !== 'default' && !colorIds.has(key)) fail(`Фото: невідомий колір ${key}`);
+      if (typeof url !== 'string' || !PHOTO_URL.test(url)) fail('Фото: невірне посилання');
+      out[key] = url;
+    }
+    return out;
+  };
 
   const defaultColor = String(input.defaultColor || '');
   if (!colorIds.has(defaultColor)) fail('Колір за замовчуванням: оберіть колір зі списку');
@@ -58,10 +62,10 @@ export function validateProduct(input, catalog, { id } = {}) {
     price: num(input.price, 'Ціна', { min: 1, max: 100000 }),
     heightCm: num(input.heightCm, 'Висота', { min: 1, max: 500, int: true }),
     diameterCm: num(input.diameterCm, 'Діаметр', { min: 1, max: 500, int: true }),
-    printHours: num(input.printHours, 'Час друку', { min: 1, max: 500, int: true }),
     defaultColor,
     tagline,
-    photos,
+    photos: readPhotos(input.photos),
+    photosNight: readPhotos(input.photosNight),
     visible: input.visible !== false,
   };
 }

@@ -97,9 +97,13 @@ a { color: inherit; }
 .editor__body h3 { font-size: 24px; margin: 10px 0 6px; }
 .editor__foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--line); }
 .editor__foot .error { margin-right: auto; }
-.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 12px; }
+.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
 .photo { display: grid; gap: 6px; font-size: 12px; }
-.photo__img { position: relative; aspect-ratio: 4 / 5; background: var(--c, #ddd); background-size: cover; background-position: center; border: 1px solid var(--line); }
+.photo__pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
+.photo__mode { display: grid; gap: 4px; min-width: 0; }
+.photo__label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.photo__img.is-night { box-shadow: inset 0 0 0 999px rgba(10, 9, 7, 0.35); }
+.photo__img { position: relative; aspect-ratio: 5 / 6; background: var(--c, #ddd); background-size: cover; background-position: center; border: 1px solid var(--line); }
 .photo__img.is-empty::after { content: 'немає фото'; position: absolute; inset: auto 0 8px; text-align: center; font-size: 11px; color: rgba(0, 0, 0, 0.55); }
 .photo__actions { display: flex; gap: 4px; flex-wrap: wrap; }
 .photo__actions label { cursor: pointer; }

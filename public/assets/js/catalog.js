@@ -1,4 +1,4 @@
-// Product catalogue, filament colours, sizes and product photos.
+// Product catalogue, colours, sizes and product photos.
 
 // Filled from the server (/api/catalog), which the admin panel edits.
 export const COLORS = [];
@@ -20,9 +20,12 @@ export const productById = (id) => PRODUCTS.find((p) => p.id === id);
 export const colorById = (id) => COLORS.find((c) => c.id === id);
 export const sizeById = (id) => SIZES.find((s) => s.id === id);
 
+// Day photo (lamp off) and night photo (lamp on) for a product in a colour.
 export const photoFor = (productId, colorId) => {
-  const photos = productById(productId)?.photos || {};
-  return photos[colorId] || photos.default || '';
+  const p = productById(productId) || {};
+  const day = p.photos || {};
+  const night = p.photosNight || {};
+  return { day: day[colorId] || day.default || '', night: night[colorId] || night.default || '' };
 };
 
 // Whether text on top of this colour should be light.

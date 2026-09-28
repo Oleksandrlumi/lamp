@@ -9,15 +9,19 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 
 const colourName = (id) => colorById(id)?.name[getLang()] ?? '';
 
-// Product image: the photo for this colour if there is one, otherwise a
-// colour panel in the chosen filament colour.
+// Product image: day and night photos for this colour if there are any,
+// otherwise a flat colour panel (which glows in night mode).
 function visualHtml(product, colorId) {
   const c = colorById(colorId);
-  const photo = photoFor(product.id, colorId);
+  const { day, night } = photoFor(product.id, colorId);
   const no = String(PRODUCTS.indexOf(product) + 1).padStart(2, '0');
-  const cls = ['visual', isDark(c.hex) && 'is-dark', photo && 'has-photo'].filter(Boolean).join(' ');
+  const alt = `${esc(product.name)} — ${esc(colourName(colorId))}`;
+  const cls = ['visual', isDark(c.hex) && 'is-dark', (day || night) && 'has-photo', night && 'has-night']
+    .filter(Boolean)
+    .join(' ');
   return `<div class="${cls}" style="--c:${c.hex}">
-      ${photo ? `<img src="${esc(photo)}" alt="${esc(product.name)} — ${esc(colourName(colorId))}" loading="lazy">` : ''}
+      ${day ? `<img class="visual__photo visual__photo--day" src="${esc(day)}" alt="${alt}" loading="lazy">` : ''}
+      ${night ? `<img class="visual__photo visual__photo--night" src="${esc(night)}" alt="${day ? '' : alt}" loading="lazy">` : ''}
       <span class="visual__no">N° ${no}</span>
       <span class="visual__colour">${esc(colourName(colorId))}</span>
       <span class="visual__name">${esc(product.name)}</span>
@@ -169,10 +173,8 @@ function renderConfigurator() {
 
   const specs = [
     ['spec.dims', `${dims.height} × ⌀ ${dims.diameter} cm`],
-    ['spec.material', t('spec.material.v')],
     ['spec.fitting', t('spec.fitting.v')],
     ['spec.cable', t(p.type === 'table' ? 'spec.cable.table' : 'spec.cable.pendant')],
-    ['spec.print', t('spec.hours', { n: Math.round(p.printHours * (cfg.size === 'L' ? 1.6 : cfg.size === 'S' ? 0.7 : 1)) })],
   ];
   $('#cfgSpecs').innerHTML = specs.map(([k, v]) => `<dt>${esc(t(k))}</dt><dd>${esc(v)}</dd>`).join('');
 }
@@ -463,6 +465,7 @@ function syncLangButtons() {
 $$('[data-lang]').forEach((b) => b.addEventListener('click', () => setLang(b.dataset.lang)));
 onLangChange(() => {
   syncLangButtons();
+  applyTheme(document.documentElement.dataset.theme);
   renderPalette();
   renderGrid();
   $$('.reveal').forEach((el) => el.classList.add('is-in'));
@@ -490,8 +493,81 @@ function observeReveal() {
 window.addEventListener('scroll', () => $('#nav').classList.toggle('is-scrolled', window.scrollY > 10), { passive: true });
 $('#year').textContent = new Date().getFullYear();
 
+/* ---------------- Day / night ---------------- */
+const nightByClock = () => {
+  const h = new Date().getHours();
+  return h >= 19 || h < 7;
+};
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const night = theme === 'night';
+  $('#themeLabel').textContent = t(night ? 'theme.night' : 'theme.day');
+  $('#themeToggle').setAttribute('aria-pressed', String(night));
+  $('meta[name=theme-color]').setAttribute('content', night ? '#11100d' : '#f3f0ea');
+}
+
+$('#themeToggle').addEventListener('click', () => {
+  const next = document.documentElement.dataset.theme === 'night' ? 'day' : 'night';
+  try {
+    sessionStorage.setItem('lumi.theme', next);
+  } catch {}
+  applyTheme(next);
+});
+
+// Follow the clock while the page stays open, unless switched manually.
+setInterval(() => {
+  let manual = null;
+  try {
+    manual = sessionStorage.getItem('lumi.theme');
+  } catch {}
+  if (!manual) applyTheme(nightByClock() ? 'night' : 'day');
+}, 60 * 1000);
+
+/* ---------------- Cookie consent & welcome offer ---------------- */
+const store = {
+  get(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch {}
+  },
+};
+
+// Consent choice ('all' or 'necessary'). The shop itself only uses functional
+// storage; anything optional added later (analytics…) must check for 'all'.
+const consent = () => store.get('lumi.consent');
+
+function maybeShowWelcome() {
+  if (store.get('lumi.welcome') || store.get('lumi.orders')) return;
+  setTimeout(() => {
+    if ($$('dialog').some((d) => d.open)) return;
+    openDialog($('#welcome'));
+  }, 2500);
+}
+
+$('#welcome').addEventListener('close', () => store.set('lumi.welcome', 'seen'));
+
+if (!consent()) $('#cookie').hidden = false;
+else maybeShowWelcome();
+
+$('#cookie').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-consent]');
+  if (!b) return;
+  store.set('lumi.consent', b.dataset.consent);
+  $('#cookie').hidden = true;
+  maybeShowWelcome();
+});
+
 /* ---------------- Boot ---------------- */
 applyTranslations();
+applyTheme(document.documentElement.dataset.theme || 'day');
 syncLangButtons();
 try {
   await loadCatalog();
