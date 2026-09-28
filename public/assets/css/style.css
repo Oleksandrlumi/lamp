@@ -105,7 +105,9 @@ p { margin: 0; }
   background: currentColor; transform: scaleX(0); transform-origin: left; transition: transform 0.35s var(--ease);
 }
 .nav__links a:hover::after, .footer a:hover::after { transform: scaleX(1); }
-.logo { display: grid; justify-items: center; gap: 6px; line-height: 1; text-align: center; }
+.logo { display: flex; align-items: center; gap: 12px; line-height: 1; }
+.logo__mark { width: 62px; height: auto; flex: none; }
+.logo__text { display: grid; justify-items: center; gap: 6px; text-align: center; }
 .logo__word { font-family: var(--serif); font-size: 34px; letter-spacing: 0.14em; padding-left: 0.14em; }
 .logo__sub { font-size: 9.5px; font-weight: 500; letter-spacing: 0.32em; padding-left: 0.32em; text-transform: uppercase; color: var(--ink-2); }
 .nav__actions { display: flex; justify-content: flex-end; align-items: center; gap: 20px; }
@@ -283,6 +285,7 @@ p { margin: 0; }
 .footer a { position: relative; display: table; padding: 3px 0; margin-bottom: 4px; color: rgba(247, 244, 238, 0.7); }
 .footer a:hover { color: var(--footer-ink); }
 .footer__head { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(247, 244, 238, 0.5); margin-bottom: 14px; }
+.footer__mark { display: block; width: clamp(96px, 12vw, 170px); height: auto; margin: 72px auto -24px; }
 .footer__logo { font-family: var(--serif); font-size: clamp(72px, 18vw, 300px); line-height: 0.9; letter-spacing: 0.1em; text-align: center; margin: 64px 0 24px; }
 .footer__legal { max-width: 1560px; margin: 0 auto; padding-top: 20px; border-top: 1px solid rgba(247, 244, 238, 0.15); font-size: 12px; color: rgba(247, 244, 238, 0.5); }
 
@@ -446,8 +449,11 @@ legend { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; colo
   .nav { grid-template-columns: auto 1fr auto; padding: 14px var(--gutter); }
   .nav__links { display: none; }
   .logo { justify-items: start; }
+  .logo { gap: 9px; }
+  .logo__mark { width: 46px; }
+  .logo__text { justify-items: start; }
   .logo__word { font-size: 28px; padding-left: 0; }
-  .logo__sub { font-size: 8.5px; padding-left: 0; }
+  .logo__sub { font-size: 8px; letter-spacing: 0.2em; padding-left: 0; white-space: nowrap; }
   .nav__actions { grid-column: 3; gap: 8px; }
   .intro__lead { font-size: 15px; }
   .trust { gap: 8px 16px; font-size: 12px; }
@@ -478,6 +484,7 @@ legend { font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; colo
   border: 1px solid var(--line-strong);
 }
 .welcome[open] { display: grid; justify-items: center; gap: 10px; }
+.welcome__mark { width: 96px; height: auto; margin-bottom: 4px; }
 .welcome__close { position: absolute; top: 14px; right: 14px; }
 .welcome__eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); }
 .welcome__big { font-family: var(--serif); font-size: 96px; line-height: 1; margin: 4px 0; letter-spacing: -0.02em; }

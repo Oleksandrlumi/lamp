@@ -6,6 +6,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>LUMI — Адмінка</title>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
   <link rel="stylesheet" href="/assets/css/fonts.css">
   <link rel="stylesheet" href="/admin/admin.css">
   <script type="module" src="/admin/admin.js"></script>
@@ -14,6 +15,7 @@
   <!-- Login -->
   <main class="login" id="loginView" hidden>
     <form class="login__card" id="loginForm" autocomplete="on">
+      <img class="login__mark" src="/assets/logo-mark.svg" alt="" width="194" height="126">
       <p class="brand">LUMI</p>
       <h1>Вхід в адмінку</h1>
       <label class="field"><span>Логін</span><input name="username" autocomplete="username" required maxlength="256"></label>
@@ -27,7 +29,7 @@
   <!-- App -->
   <div class="app" id="appView" hidden>
     <header class="top">
-      <p class="brand">LUMI <span>адмінка</span></p>
+      <p class="brand"><img class="brand__mark" src="/assets/logo-mark.svg" alt="" width="194" height="126">LUMI <span>адмінка</span></p>
       <nav class="tabs" role="tablist">
         <button type="button" data-tab="products" class="is-active">Товари</button>
         <button type="button" data-tab="settings">Ціни й доставка</button>

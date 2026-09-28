@@ -21,7 +21,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
 a { color: inherit; }
 .hint { color: var(--muted); font-size: 13px; margin: 0 0 16px; max-width: 60em; }
 .error { color: var(--danger); font-size: 13px; min-height: 1.2em; margin: 0; }
-.brand { font-family: var(--serif); font-size: 26px; letter-spacing: 0.28em; margin: 0; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 26px; letter-spacing: 0.28em; margin: 0; }
+.brand__mark { width: 42px; height: auto; }
+.login__mark { width: 84px; height: auto; margin-bottom: 4px; }
 .brand span { font-family: var(--sans); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-left: 6px; }
 
 .btn {
