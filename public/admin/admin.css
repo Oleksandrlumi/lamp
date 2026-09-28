@@ -99,12 +99,34 @@ a { color: inherit; }
 .editor__body h3 { font-size: 24px; margin: 10px 0 6px; }
 .editor__foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 16px 24px; border-top: 1px solid var(--line); }
 .editor__foot .error { margin-right: auto; }
-.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 16px; }
+/* Colours + gallery editor */
+.colour-picks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.colour-pick { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); cursor: pointer; font-size: 14px; user-select: none; }
+.colour-pick input { width: 16px; height: 16px; margin: 0; accent-color: var(--ink); }
+.colour-pick i { width: 18px; height: 18px; background: var(--c); border: 1px solid rgba(0, 0, 0, 0.12); }
+.colour-pick:has(input:checked) { border-color: var(--ink); }
+.colour-pick:has(input:not(:checked)) { color: var(--muted); }
+.colour-pick:has(input:not(:checked)) i { opacity: 0.35; }
+.dots { display: flex; gap: 3px; margin-top: 5px; }
+.dots i { width: 10px; height: 10px; background: var(--c); border: 1px solid rgba(0, 0, 0, 0.12); }
+.gallery-edit { display: grid; gap: 22px; }
+.slot { border-top: 1px solid var(--line); padding-top: 12px; }
+.slot__head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; font-size: 14px; }
+.slot__head .muted { color: var(--muted); font-size: 12px; }
+.frames { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.frame { display: grid; gap: 6px; font-size: 12px; align-content: start; }
+.frame__foot { display: flex; align-items: center; gap: 2px; flex-wrap: wrap; }
+.frame__no { font-size: 11px; color: var(--muted); margin-right: auto; }
+.link-btn:disabled { opacity: 0.3; cursor: default; }
+.frame--add { display: grid; place-items: center; align-content: center; min-height: 140px; border: 1px dashed var(--line-strong, rgba(0, 0, 0, 0.3)); color: var(--ink-2); cursor: pointer; font-size: 13px; }
+.frame--add:hover { border-color: var(--ink); color: var(--ink); }
+.frame--add input { display: none; }
 .photo { display: grid; gap: 6px; font-size: 12px; }
 .photo__pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-items: start; }
 .photo__mode { display: grid; gap: 4px; min-width: 0; }
 .photo__label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
-.photo__img.is-night { box-shadow: inset 0 0 0 999px rgba(10, 9, 7, 0.35); }
+/* empty night slot looks dark */
+.photo__img.is-night.is-empty { box-shadow: inset 0 0 0 999px rgba(10, 9, 7, 0.35); }
 .photo__img { position: relative; aspect-ratio: 5 / 6; background: var(--c, #ddd); background-size: cover; background-position: center; border: 1px solid var(--line); }
 .photo__img.is-empty::after { content: 'немає фото'; position: absolute; inset: auto 0 8px; text-align: center; font-size: 11px; color: rgba(0, 0, 0, 0.55); }
 .photo__actions { display: flex; gap: 4px; flex-wrap: wrap; }

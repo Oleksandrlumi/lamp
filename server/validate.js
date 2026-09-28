@@ -8,6 +8,7 @@ const fail = (msg) => {
 };
 
 const LANGS = ['nl', 'en']; // shop languages (product descriptions)
+const MAX_FRAMES = 12; // photos per colour
 const PHOTO_URL = /^(\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)|assets\/img\/lamps\/[A-Za-z0-9._-]{1,80})$/;
 
 function str(v, name, { min = 0, max = 200 } = {}) {
@@ -39,20 +40,33 @@ export function validateProduct(input, catalog, { id } = {}) {
   const tagline = {};
   for (const l of LANGS) tagline[l] = str(input.tagline?.[l] ?? '', `Опис (${l.toUpperCase()})`, { max: 300 });
 
-  // Day photos (lamp off) and night photos (lamp on), per colour or 'default'.
-  const readPhotos = (set) => {
-    const out = {};
-    for (const [key, url] of Object.entries(set && typeof set === 'object' ? set : {})) {
-      if (!url) continue;
-      if (key !== 'default' && !colorIds.has(key)) fail(`Фото: невідомий колір ${key}`);
-      if (typeof url !== 'string' || !PHOTO_URL.test(url)) fail('Фото: невірне посилання');
-      out[key] = url;
-    }
-    return out;
-  };
-
+  // Colours this lamp is sold in (at least one), in palette order.
+  const wanted = Array.isArray(input.colors) ? input.colors.map(String) : [];
+  const colors = catalog.colors.map((c) => c.id).filter((c) => wanted.includes(c));
+  if (!colors.length) fail('Кольори: оберіть хоча б один колір');
   const defaultColor = String(input.defaultColor || '');
-  if (!colorIds.has(defaultColor)) fail('Колір за замовчуванням: оберіть колір зі списку');
+  if (!colors.includes(defaultColor)) fail('Колір за замовчуванням: має бути серед доступних кольорів');
+
+  // Photo gallery per colour (or 'default' for all colours). Each frame has a
+  // day photo (lamp off) and/or a night photo (lamp on).
+  const photoUrl = (url) => {
+    if (url === undefined || url === null || url === '') return '';
+    if (typeof url !== 'string' || !PHOTO_URL.test(url)) fail('Фото: невірне посилання');
+    return url;
+  };
+  const gallery = {};
+  const rawGallery = input.gallery && typeof input.gallery === 'object' ? input.gallery : {};
+  for (const [key, frames] of Object.entries(rawGallery)) {
+    if (key !== 'default' && !colorIds.has(key)) fail(`Фото: невідомий колір ${key}`);
+    if (key !== 'default' && !colors.includes(key)) continue; // colour no longer offered
+    if (!Array.isArray(frames)) fail('Фото: невірні дані');
+    if (frames.length > MAX_FRAMES) fail(`Фото: максимум ${MAX_FRAMES} на колір`);
+    const list = frames
+      .map((f) => ({ day: photoUrl(f?.day), night: photoUrl(f?.night) }))
+      .filter((f) => f.day || f.night);
+    if (list.length) gallery[key] = list;
+  }
+
   if (!['table', 'pendant'].includes(input.type)) fail('Тип: настільна або підвісна');
 
   return {
@@ -62,10 +76,10 @@ export function validateProduct(input, catalog, { id } = {}) {
     price: num(input.price, 'Ціна', { min: 1, max: 100000 }),
     heightCm: num(input.heightCm, 'Висота', { min: 1, max: 500, int: true }),
     diameterCm: num(input.diameterCm, 'Діаметр', { min: 1, max: 500, int: true }),
+    colors,
     defaultColor,
     tagline,
-    photos: readPhotos(input.photos),
-    photosNight: readPhotos(input.photosNight),
+    gallery,
     visible: input.visible !== false,
   };
 }
@@ -117,7 +131,7 @@ export function validateOrder(input, catalog) {
   if (!Array.isArray(input.items) || !input.items.length || input.items.length > 30) fail('Invalid items');
   const items = input.items.map((i) => {
     const product = catalog.products.find((p) => p.id === i?.productId && p.visible);
-    const color = catalog.colors.find((col) => col.id === i?.colorId);
+    const color = product?.colors.includes(i?.colorId) && catalog.colors.find((col) => col.id === i.colorId);
     const size = catalog.sizes.find((s) => s.id === i?.size);
     const qty = Number(i?.qty);
     if (!product || !color || !size || !Number.isInteger(qty) || qty < 1 || qty > 20) fail('Invalid item');

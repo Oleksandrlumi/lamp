@@ -7,8 +7,8 @@ Lettertypen staan lokaal in `public/assets/fonts/` (geen Google Fonts — pretti
 ## Functies
 
 - **Dag/nacht-modus** — overdag een lichte site met foto's van de lamp uit; 's avonds (19:00–07:00, of via de knop Dag/Nacht) een donkere site met foto's waarop de lampen branden.
-- **Kleurkeuze uit vijf vaste kleuren** (Ivoor, Zand, Terracotta, Salie, Grafiet; aan te passen in `server/seed-catalog.json`) — via de kleurenrij boven de collectie (toont alle lampen in die kleur), per productkaart of in het productvenster.
-- **Productfoto's per kleur, voor dag én nacht** (zie hieronder). Zolang er geen foto is, wordt de lamp getoond als een effen kleurvlak (dat 's nachts zacht gloeit).
+- **Kleurkeuze uit vijf vaste kleuren** (Ivoor, Zand, Terracotta, Salie, Grafiet; aan te passen in `server/seed-catalog.json`), per lamp in te stellen welke kleuren er zijn — via de kleurenrij boven de collectie (toont alle lampen in die kleur), per productkaart of in het productvenster.
+- **Fotogalerij per kleur, voor dag én nacht** (bladeren met pijlen of swipen; zie hieronder). Zolang er geen foto is, wordt de lamp getoond als een effen kleurvlak (dat 's nachts zacht gloeit).
 - **Maten** S / M / L met eigen prijs en afmetingen.
 - **Adres via postcode**: bij Nederlandse adressen worden straat en plaats automatisch ingevuld op basis van postcode + huisnummer (gratis [PDOK Locatieserver](https://api.pdok.nl/bzk/locatieserver/search/v3_1/ui/), BAG-data, geen API-sleutel). Beschikbare toevoegingen worden als suggestie getoond.
 - **10% korting op de eerste bestelling**: aangekondigd in een welkomstvenster (één keer per bezoeker), automatisch verrekend zonder code, per e-mailadres.
@@ -24,7 +24,9 @@ Lettertypen staan lokaal in `public/assets/fonts/` (geen Google Fonts — pretti
 
 Op `/admin` beheer je producten, prijzen, foto's, verzendkosten en zie je bestellingen en vragen van klanten.
 
-**Foto's toevoegen:** open een product → *Фото* → upload per kleur (of *Основне* voor alle kleuren) een **dag**-foto (lamp uit) en een **nacht**-foto (lamp aan). Staand formaat 5:6 werkt het mooist.
+**Kleuren per lamp:** open een product → *Кольори* → vink de kleuren aan waarin de lamp verkrijgbaar is. In de winkel zie je alleen die kleuren; de kleurenrij boven de collectie toont alleen lampen die in die kleur bestaan, en de server weigert bestellingen in een andere kleur.
+
+**Foto's toevoegen:** open een product → *Фото* → per kleur (of *Для всіх кольорів*) tot 12 foto's, meerdere tegelijk te uploaden. Elke foto heeft een **dag**-versie (lamp uit) en optioneel een **nacht**-versie (lamp aan). Volgorde aan te passen met ← →; de eerste foto staat in de collectie. In het productvenster kunnen klanten door de foto's bladeren (pijlen, puntjes, swipen, pijltjestoetsen). Staand formaat 5:6 werkt het mooist.
 
 **Beveiliging**
 - Wachtwoord wordt alleen als scrypt-hash opgeslagen (in `.env` / omgevingsvariabelen), nooit in git.

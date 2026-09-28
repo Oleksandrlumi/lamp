@@ -20,13 +20,16 @@ export const productById = (id) => PRODUCTS.find((p) => p.id === id);
 export const colorById = (id) => COLORS.find((c) => c.id === id);
 export const sizeById = (id) => SIZES.find((s) => s.id === id);
 
-// Day photo (lamp off) and night photo (lamp on) for a product in a colour.
-export const photoFor = (productId, colorId) => {
-  const p = productById(productId) || {};
-  const day = p.photos || {};
-  const night = p.photosNight || {};
-  return { day: day[colorId] || day.default || '', night: night[colorId] || night.default || '' };
+// Photo gallery for a product in a colour: a list of frames, each with a day
+// photo (lamp off) and/or a night photo (lamp on). Falls back to the photos
+// for all colours ('default'); empty when there are none.
+export const framesFor = (productId, colorId) => {
+  const g = productById(productId)?.gallery || {};
+  return g[colorId]?.length ? g[colorId] : g.default || [];
 };
+
+// Colours a product is sold in.
+export const coloursOf = (product) => COLORS.filter((c) => product.colors?.includes(c.id));
 
 // Whether text on top of this colour should be light.
 export function isDark(hex) {

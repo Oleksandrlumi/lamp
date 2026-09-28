@@ -45,7 +45,7 @@ export async function initStore() {
   const seed = JSON.parse(await fs.readFile(path.join(root, 'seed-catalog.json'), 'utf8'));
   catalog = await readJson(CATALOG, null);
   if (!catalog) {
-    catalog = seed;
+    catalog = { ...seed, products: seed.products.map((p) => normalizeProduct(p, seed.colors)) };
     await writeAtomic(CATALOG, catalog);
   } else {
     await syncColours(seed.colors);
@@ -54,18 +54,30 @@ export async function initStore() {
   messages = await readJson(MESSAGES, []);
 }
 
-// The colour palette is defined in code (seed-catalog.json). When it changes,
-// update stored products: unknown default colours fall back to the first
-// colour and photos for removed colours are dropped.
+// The colour palette is defined in code (seed-catalog.json). On start, bring
+// stored products in line with it: available colours limited to the palette
+// (all colours if none), a valid default colour, galleries only for offered
+// colours. Older data with single photos (photos/photosNight) becomes a
+// one-frame gallery.
+export function normalizeProduct(p, colors) {
+  const palette = colors.map((c) => c.id);
+  let offered = Array.isArray(p.colors) ? palette.filter((id) => p.colors.includes(id)) : [];
+  if (!offered.length) offered = palette;
+  let gallery = p.gallery;
+  if (!gallery) {
+    gallery = {};
+    for (const key of new Set([...Object.keys(p.photos || {}), ...Object.keys(p.photosNight || {})])) {
+      const frame = { day: p.photos?.[key] || '', night: p.photosNight?.[key] || '' };
+      if (frame.day || frame.night) gallery[key] = [frame];
+    }
+  }
+  gallery = Object.fromEntries(Object.entries(gallery).filter(([k, v]) => (k === 'default' || offered.includes(k)) && Array.isArray(v) && v.length));
+  const { photos, photosNight, ...rest } = p;
+  return { ...rest, colors: offered, defaultColor: offered.includes(p.defaultColor) ? p.defaultColor : offered[0], gallery };
+}
+
 async function syncColours(colors) {
-  const ids = new Set(colors.map((c) => c.id));
-  const keepPhotos = (set = {}) => Object.fromEntries(Object.entries(set).filter(([k]) => k === 'default' || ids.has(k)));
-  const products = catalog.products.map((p) => ({
-    ...p,
-    defaultColor: ids.has(p.defaultColor) ? p.defaultColor : colors[0].id,
-    photos: keepPhotos(p.photos),
-    photosNight: keepPhotos(p.photosNight),
-  }));
+  const products = catalog.products.map((p) => normalizeProduct(p, colors));
   const next = { ...catalog, colors, products };
   if (JSON.stringify(next) !== JSON.stringify(catalog)) {
     await backupCatalog();

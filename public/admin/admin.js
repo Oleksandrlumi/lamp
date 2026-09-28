@@ -120,11 +120,12 @@ async function loadCatalog() {
 function renderProducts() {
   const rows = catalog.products
     .map((p, i) => {
-      const photo = p.photos?.default || p.photos?.[p.defaultColor] || '';
+      const first = (p.gallery?.[p.defaultColor] || p.gallery?.default || [])[0] || {};
+      const photo = first.day || first.night || '';
       const style = `--c:${colorHex(p.defaultColor)}${photo ? `;background-image:url('${photo}')` : ''}`;
       return `<tr data-id="${esc(p.id)}">
         <td><div class="thumb" style="${esc(style)}"></div></td>
-        <td><div class="name">${esc(p.name)}</div><div class="muted">${esc(TYPES[p.type])} · ${p.heightCm} × ⌀ ${p.diameterCm} см</div></td>
+        <td><div class="name">${esc(p.name)}</div><div class="muted">${esc(TYPES[p.type])} · ${p.heightCm} × ⌀ ${p.diameterCm} см</div><div class="dots">${(p.colors || []).map((c) => `<i style="--c:${esc(colorHex(c))}"></i>`).join('')}</div></td>
         <td><form class="price-edit" data-act="price"><input name="price" value="${esc(p.price)}" inputmode="decimal" aria-label="Ціна"><button class="btn btn--line btn--sm" type="submit">Зберегти</button></form></td>
         <td>${p.visible ? '<span class="badge badge--ok">у магазині</span>' : '<span class="badge badge--off">приховано</span>'}</td>
         <td><div class="row-actions">
@@ -179,9 +180,10 @@ $('#productTable').addEventListener('click', async (e) => {
 /* ---------------- Product editor ---------------- */
 const editor = $('#editor');
 const pform = $('#productForm');
+const MAX_FRAMES = 12;
 let editing = null; // product id, or null for a new product
-let photos = {};
-let photosNight = {};
+let colours = []; // colour ids this lamp is sold in
+let gallery = {}; // { default | colourId: [{ day, night }] }
 
 editor.addEventListener('click', (e) => {
   if (e.target.closest('[data-close]')) editor.close();
@@ -194,37 +196,65 @@ $('#addProduct').addEventListener('click', () =>
     price: '',
     heightCm: '',
     diameterCm: '',
+    colors: catalog.colors.map((c) => c.id),
     defaultColor: catalog.colors[0].id,
     tagline: { nl: '', en: '' },
-    photos: {},
+    gallery: {},
     visible: true,
   }),
 );
 
 function openEditor(p) {
   editing = p.id || null;
-  photos = { ...(p.photos || {}) };
-  photosNight = { ...(p.photosNight || {}) };
+  colours = [...(p.colors || catalog.colors.map((c) => c.id))];
+  gallery = Object.fromEntries(Object.entries(p.gallery || {}).map(([k, v]) => [k, v.map((f) => ({ ...f }))]));
   $('#editorTitle').textContent = editing ? p.name : 'Новий товар';
   $('#productError').textContent = '';
-  $('#defaultColor').innerHTML = catalog.colors.map((c) => `<option value="${esc(c.id)}">${esc(c.name.uk)}</option>`).join('');
   const f = pform.elements;
   f.name.value = p.name;
   f.type.value = p.type;
   f.price.value = p.price;
   f.heightCm.value = p.heightCm;
   f.diameterCm.value = p.diameterCm;
-  f.defaultColor.value = p.defaultColor;
   f.visible.checked = p.visible !== false;
   for (const l of ['nl', 'en']) f[`tagline_${l}`].value = p.tagline?.[l] || '';
+  renderColours(p.defaultColor);
   renderPhotos();
   editor.showModal();
 }
 
-const photoSet = (mode) => (mode === 'night' ? photosNight : photos);
+// Colour checkboxes + default colour (only among the offered colours).
+function renderColours(defaultColor = pform.elements.defaultColor.value) {
+  $('#colourPicks').innerHTML = catalog.colors
+    .map(
+      (c) => `<label class="colour-pick"><input type="checkbox" value="${esc(c.id)}" ${colours.includes(c.id) ? 'checked' : ''}>
+        <i style="--c:${esc(c.hex)}"></i><span>${esc(c.name.uk)}</span></label>`,
+    )
+    .join('');
+  const offered = catalog.colors.filter((c) => colours.includes(c.id));
+  $('#defaultColor').innerHTML = offered.map((c) => `<option value="${esc(c.id)}">${esc(c.name.uk)}</option>`).join('');
+  pform.elements.defaultColor.value = colours.includes(defaultColor) ? defaultColor : offered[0].id;
+}
 
-function photoTile(slot, mode, hex) {
-  const url = photoSet(mode)[slot];
+$('#colourPicks').addEventListener('change', (e) => {
+  const box = e.target.closest('input[type=checkbox]');
+  if (!box) return;
+  const next = catalog.colors.map((c) => c.id).filter((id) => (id === box.value ? box.checked : colours.includes(id)));
+  if (!next.length) {
+    box.checked = true;
+    return toast('Потрібен хоча б один колір', true);
+  }
+  if (!box.checked && gallery[box.value]?.length && !confirm('Для цього кольору є фото. Прибрати колір разом з його фото (після збереження)?')) {
+    box.checked = true;
+    return;
+  }
+  colours = next;
+  if (!box.checked) delete gallery[box.value];
+  renderColours();
+  renderPhotos();
+});
+
+function photoTile(url, mode, hex) {
   const style = `--c:${hex}${url ? `;background-image:url('${url}')` : ''}`;
   return `<div class="photo__mode" data-mode="${mode}">
       <div class="photo__img${url ? '' : ' is-empty'}${mode === 'night' ? ' is-night' : ''}" style="${esc(style)}"></div>
@@ -237,40 +267,89 @@ function photoTile(slot, mode, hex) {
 }
 
 function renderPhotos() {
-  const slots = [{ id: 'default', name: 'Основне', hex: '#ddd' }, ...catalog.colors.map((c) => ({ id: c.id, name: c.name.uk, hex: c.hex }))];
+  const slots = [
+    { id: 'default', name: 'Для всіх кольорів', hex: '#ddd' },
+    ...catalog.colors.filter((c) => colours.includes(c.id)).map((c) => ({ id: c.id, name: c.name.uk, hex: c.hex })),
+  ];
   $('#photoGrid').innerHTML = slots
-    .map(
-      (s) => `<div class="photo" data-slot="${esc(s.id)}">
-        <strong>${esc(s.name)}</strong>
-        <div class="photo__pair">${photoTile(s.id, 'day', s.hex)}${photoTile(s.id, 'night', s.hex)}</div>
-      </div>`,
-    )
+    .map((s) => {
+      const frames = gallery[s.id] || [];
+      return `<section class="slot" data-slot="${esc(s.id)}">
+        <div class="slot__head"><strong>${esc(s.name)}</strong><span class="muted">${frames.length ? `${frames.length} фото` : 'немає фото'}</span></div>
+        <div class="frames">
+          ${frames
+            .map(
+              (f, i) => `<div class="frame" data-i="${i}">
+                <div class="photo__pair">${photoTile(f.day, 'day', s.hex)}${photoTile(f.night, 'night', s.hex)}</div>
+                <div class="frame__foot">
+                  <span class="frame__no">${i === 0 ? '№1 · головне' : `№${i + 1}`}</span>
+                  <button class="link-btn" type="button" data-move="-1" ${i === 0 ? 'disabled' : ''} aria-label="Раніше">←</button>
+                  <button class="link-btn" type="button" data-move="1" ${i === frames.length - 1 ? 'disabled' : ''} aria-label="Пізніше">→</button>
+                  <button class="link-btn" type="button" data-remove-frame>Видалити</button>
+                </div>
+              </div>`,
+            )
+            .join('')}
+          ${frames.length < MAX_FRAMES ? `<label class="frame frame--add"><span>+ Додати фото</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple></label>` : ''}
+        </div>
+      </section>`;
+    })
     .join('');
+}
+
+async function upload(file) {
+  if (file.size > 8 * 1024 * 1024) throw new Error(`${file.name}: файл завеликий (макс. 8 МБ)`);
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) throw new Error(`${file.name}: лише JPG, PNG або WebP`);
+  return (await api('/uploads', { method: 'POST', raw: file })).url;
 }
 
 $('#photoGrid').addEventListener('change', async (e) => {
   const input = e.target.closest('input[type=file]');
-  const file = input?.files?.[0];
-  if (!file) return;
+  const files = [...(input?.files || [])];
+  if (!files.length) return;
   const slot = input.closest('[data-slot]').dataset.slot;
-  const mode = input.closest('[data-mode]').dataset.mode;
-  if (file.size > 8 * 1024 * 1024) return toast('Файл завеликий (макс. 8 МБ)', true);
-  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return toast('Лише JPG, PNG або WebP', true);
+  const frame = input.closest('[data-i]');
+  const list = (gallery[slot] ||= []);
   try {
-    toast('Завантаження…');
-    const { url } = await api('/uploads', { method: 'POST', raw: file });
-    photoSet(mode)[slot] = url;
+    if (frame) {
+      // replace the day or night photo of one frame
+      toast('Завантаження…');
+      list[Number(frame.dataset.i)][input.closest('[data-mode]').dataset.mode] = await upload(files[0]);
+    } else {
+      // add new frames (day photos), several files at once
+      const room = MAX_FRAMES - list.length;
+      if (files.length > room) toast(`Можна додати ще ${room} фото`, true);
+      for (const [n, file] of files.slice(0, room).entries()) {
+        toast(`Завантаження ${n + 1} з ${Math.min(files.length, room)}…`);
+        list.push({ day: await upload(file), night: '' });
+        renderPhotos();
+      }
+    }
     renderPhotos();
     toast('Фото завантажено — не забудьте зберегти товар');
   } catch (err) {
+    renderPhotos();
     fail(err);
   }
 });
 
 $('#photoGrid').addEventListener('click', (e) => {
-  if (!e.target.closest('[data-remove]')) return;
+  const frameEl = e.target.closest('[data-i]');
+  if (!frameEl) return;
   const slot = e.target.closest('[data-slot]').dataset.slot;
-  delete photoSet(e.target.closest('[data-mode]').dataset.mode)[slot];
+  const list = gallery[slot];
+  const i = Number(frameEl.dataset.i);
+  if (e.target.closest('[data-remove]')) {
+    list[i][e.target.closest('[data-mode]').dataset.mode] = '';
+    if (!list[i].day && !list[i].night) list.splice(i, 1);
+  } else if (e.target.closest('[data-remove-frame]')) {
+    list.splice(i, 1);
+  } else if (e.target.closest('[data-move]')) {
+    const j = i + Number(e.target.closest('[data-move]').dataset.move);
+    if (j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+  } else return;
+  if (!list.length) delete gallery[slot];
   renderPhotos();
 });
 
@@ -283,11 +362,11 @@ pform.addEventListener('submit', async (e) => {
     price: f.price.value,
     heightCm: f.heightCm.value,
     diameterCm: f.diameterCm.value,
+    colors: colours,
     defaultColor: f.defaultColor.value,
     visible: f.visible.checked,
     tagline: { nl: f.tagline_nl.value, en: f.tagline_en.value },
-    photos,
-    photosNight,
+    gallery,
   };
   const button = $('button[type=submit]', pform);
   button.disabled = true;

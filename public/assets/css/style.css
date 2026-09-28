@@ -227,6 +227,37 @@ p { margin: 0; }
 }
 .visual.has-photo .visual__no, .visual.has-photo .visual__colour, .visual.has-photo .visual__name { display: none; }
 
+/* ---------- Photo gallery (product detail) ---------- */
+.gallery { position: relative; width: 100%; height: 100%; }
+.gallery__track {
+  display: flex; width: 100%; height: 100%; overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain; scrollbar-width: none;
+}
+.gallery__track::-webkit-scrollbar { display: none; }
+.gallery__track:focus-visible { outline: 1.5px solid var(--ink); outline-offset: -4px; }
+.gallery__slide { flex: 0 0 100%; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+.gallery__nav {
+  position: absolute; top: 50%; z-index: 2; width: 44px; height: 44px; margin-top: -22px;
+  display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: color-mix(in srgb, var(--paper) 82%, transparent); color: var(--ink);
+  backdrop-filter: blur(6px); cursor: pointer; transition: opacity 0.3s, background 0.3s;
+}
+.gallery__nav svg { width: 20px; height: 20px; }
+.gallery__nav:hover { background: var(--paper); }
+.gallery__nav:disabled { opacity: 0; pointer-events: none; }
+.gallery__nav--prev { left: 16px; }
+.gallery__nav--next { right: 16px; }
+.gallery__dots { position: absolute; left: 0; right: 0; bottom: 18px; z-index: 2; display: flex; justify-content: center; gap: 4px; }
+.gallery__dots button { width: 22px; height: 22px; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; }
+.gallery__dots button::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55); box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12); transition: background 0.3s, transform 0.3s;
+}
+.gallery__dots button[aria-current='true']::before { background: #fff; transform: scale(1.35); }
+@media (hover: none) {
+  .gallery__nav { display: none; }
+}
+
 /* ---------- Product grid ---------- */
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(36px, 4vw, 56px) clamp(16px, 2vw, 28px); }
 .card { display: flex; flex-direction: column; }

@@ -79,14 +79,20 @@
       "price": 129,
       "heightCm": 28,
       "diameterCm": 26,
+      "colors": [
+        "ivory",
+        "sand",
+        "terracotta",
+        "sage",
+        "graphite"
+      ],
       "defaultColor": "terracotta",
       "tagline": {
         "nl": "Een gloeiende bol met spiraalribben die het licht laten draaien.",
         "en": "A glowing orb with spiral ribs that make the light swirl."
       },
       "visible": true,
-      "photos": {},
-      "photosNight": {}
+      "gallery": {}
     },
     {
       "id": "dune",
@@ -95,14 +101,20 @@
       "price": 149,
       "heightCm": 38,
       "diameterCm": 20,
+      "colors": [
+        "ivory",
+        "sand",
+        "terracotta",
+        "sage",
+        "graphite"
+      ],
       "defaultColor": "sand",
       "tagline": {
         "nl": "Golvende ribben, geïnspireerd op door de wind gevormde duinen.",
         "en": "Undulating ribs inspired by wind-shaped dunes."
       },
       "visible": true,
-      "photos": {},
-      "photosNight": {}
+      "gallery": {}
     },
     {
       "id": "bloom",
@@ -111,14 +123,20 @@
       "price": 169,
       "heightCm": 24,
       "diameterCm": 42,
+      "colors": [
+        "ivory",
+        "sand",
+        "terracotta",
+        "sage",
+        "graphite"
+      ],
       "defaultColor": "ivory",
       "tagline": {
         "nl": "Een hanglamp als een openvallende bloem, met zes zachte bloembladen.",
         "en": "A pendant like an opening flower, with six soft petals."
       },
       "visible": true,
-      "photos": {},
-      "photosNight": {}
+      "gallery": {}
     },
     {
       "id": "helix",
@@ -127,14 +145,20 @@
       "price": 119,
       "heightCm": 34,
       "diameterCm": 18,
+      "colors": [
+        "ivory",
+        "sand",
+        "terracotta",
+        "sage",
+        "graphite"
+      ],
       "defaultColor": "graphite",
       "tagline": {
         "nl": "Een gedraaide zeshoek: strak van dichtbij, vloeiend van een afstand.",
         "en": "A twisted hexagon: crisp up close, fluid from afar."
       },
       "visible": true,
-      "photos": {},
-      "photosNight": {}
+      "gallery": {}
     },
     {
       "id": "strata",
@@ -143,14 +167,20 @@
       "price": 179,
       "heightCm": 22,
       "diameterCm": 46,
+      "colors": [
+        "ivory",
+        "sand",
+        "terracotta",
+        "sage",
+        "graphite"
+      ],
       "defaultColor": "sand",
       "tagline": {
         "nl": "Terrassen van licht — een koepel opgebouwd uit gestapelde ringen.",
         "en": "Terraces of light — a dome built from stacked rings."
       },
       "visible": true,
-      "photos": {},
-      "photosNight": {}
+      "gallery": {}
     },
     {
       "id": "ripple",
@@ -159,14 +189,20 @@
       "price": 139,
       "heightCm": 30,
       "diameterCm": 24,
+      "colors": [
+        "ivory",
+        "sand",
+        "terracotta",
+        "sage",
+        "graphite"
+      ],
       "defaultColor": "sage",
       "tagline": {
         "nl": "Een gebreide textuur van golven die het licht zacht verstrooit.",
         "en": "A knitted texture of ripples that softly diffuses the light."
       },
       "visible": true,
-      "photos": {},
-      "photosNight": {}
+      "gallery": {}
     }
   ]
 }

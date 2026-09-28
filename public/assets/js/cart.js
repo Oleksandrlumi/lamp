@@ -23,9 +23,10 @@ function write(key, value) {
 
 let items = [];
 
-// Call once the catalogue is loaded: drops items that no longer exist.
+// Call once the catalogue is loaded: drops items that no longer exist
+// (or a colour the lamp is no longer sold in).
 export function initCart() {
-  items = read(CART_KEY, []).filter((i) => productById(i.productId) && colorById(i.colorId) && sizeById(i.size));
+  items = read(CART_KEY, []).filter((i) => productById(i.productId)?.colors?.includes(i.colorId) && colorById(i.colorId) && sizeById(i.size));
   emit();
 }
 

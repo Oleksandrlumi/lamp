@@ -1,4 +1,4 @@
-import { loadCatalog, PRODUCTS, COLORS, SIZES, productById, colorById, photoFor, isDark, unitPrice, dimensions } from './catalog.js';
+import { loadCatalog, PRODUCTS, COLORS, SIZES, productById, colorById, framesFor, coloursOf, isDark, unitPrice, dimensions } from './catalog.js';
 import { t, setLang, getLang, onLangChange, applyTranslations, money } from './i18n.js';
 import * as cart from './cart.js';
 import { lookupAddress, NL_POSTCODE, formatPostcode } from './postcode.js';
@@ -10,23 +10,71 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
 
 const colourName = (id) => colorById(id)?.name[getLang()] ?? '';
 
-// Product image: day and night photos for this colour if there are any,
-// otherwise a flat colour panel (which glows in night mode).
-function visualHtml(product, colorId) {
+// Product image: one gallery frame (day photo and/or night photo) for this
+// colour, or a flat colour panel (which glows in night mode) without photos.
+function visualHtml(product, colorId, frame = framesFor(product.id, colorId)[0], { eager = false } = {}) {
   const c = colorById(colorId);
-  const { day, night } = photoFor(product.id, colorId);
+  const { day = '', night = '' } = frame || {};
   const no = String(PRODUCTS.indexOf(product) + 1).padStart(2, '0');
   const alt = `${esc(product.name)} — ${esc(colourName(colorId))}`;
+  const loading = eager ? '' : ' loading="lazy"';
   const cls = ['visual', isDark(c.hex) && 'is-dark', (day || night) && 'has-photo', night && 'has-night']
     .filter(Boolean)
     .join(' ');
   return `<div class="${cls}" style="--c:${c.hex}">
-      ${day ? `<img class="visual__photo visual__photo--day" src="${esc(day)}" alt="${alt}" loading="lazy">` : ''}
-      ${night ? `<img class="visual__photo visual__photo--night" src="${esc(night)}" alt="${day ? '' : alt}" loading="lazy">` : ''}
+      ${day ? `<img class="visual__photo visual__photo--day" src="${esc(day)}" alt="${alt}"${loading}>` : ''}
+      ${night ? `<img class="visual__photo visual__photo--night" src="${esc(night)}" alt="${day ? '' : alt}"${loading}>` : ''}
       <span class="visual__no">N° ${no}</span>
       <span class="visual__colour">${esc(colourName(colorId))}</span>
       <span class="visual__name">${esc(product.name)}</span>
     </div>`;
+}
+
+// Swipeable photo gallery (scroll-snap) with arrows and dots.
+const ARROW = (d) => `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${d}" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>`;
+function galleryHtml(product, colorId) {
+  const frames = framesFor(product.id, colorId);
+  if (frames.length < 2) return visualHtml(product, colorId, frames[0], { eager: true });
+  const n = frames.length;
+  return `<div class="gallery">
+      <div class="gallery__track" tabindex="0" aria-roledescription="carousel" aria-label="${esc(product.name)} — ${esc(t('gallery.label'))}">
+        ${frames.map((f, i) => `<div class="gallery__slide" role="group" aria-roledescription="slide" aria-label="${i + 1} / ${n}">${visualHtml(product, colorId, f, { eager: i === 0 })}</div>`).join('')}
+      </div>
+      <button class="gallery__nav gallery__nav--prev" type="button" data-step="-1" aria-label="${esc(t('gallery.prev'))}" disabled>${ARROW('M15 5l-7 7 7 7')}</button>
+      <button class="gallery__nav gallery__nav--next" type="button" data-step="1" aria-label="${esc(t('gallery.next'))}">${ARROW('M9 5l7 7-7 7')}</button>
+      <div class="gallery__dots">${frames.map((_, i) => `<button type="button" data-go="${i}" aria-label="${esc(t('gallery.photo'))} ${i + 1}" aria-current="${i === 0}"></button>`).join('')}</div>
+    </div>`;
+}
+
+function initGallery(container) {
+  const root = $('.gallery', container);
+  if (!root) return;
+  const track = $('.gallery__track', root);
+  const count = track.children.length;
+  const current = () => Math.round(track.scrollLeft / track.clientWidth);
+  const go = (i) => track.scrollTo({ left: Math.max(0, Math.min(count - 1, i)) * track.clientWidth, behavior: 'smooth' });
+  const sync = () => {
+    const i = current();
+    $$('.gallery__dots button', root).forEach((b, k) => b.setAttribute('aria-current', String(k === i)));
+    $('.gallery__nav--prev', root).disabled = i === 0;
+    $('.gallery__nav--next', root).disabled = i === count - 1;
+  };
+  let frame;
+  track.addEventListener('scroll', () => {
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(sync);
+  }, { passive: true });
+  root.addEventListener('click', (e) => {
+    const step = e.target.closest('[data-step]');
+    const dot = e.target.closest('[data-go]');
+    if (step) go(current() + Number(step.dataset.step));
+    if (dot) go(Number(dot.dataset.go));
+  });
+  track.addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    go(current() + (e.key === 'ArrowRight' ? 1 : -1));
+  });
 }
 
 /* ---------------- Dialogs ---------------- */
@@ -60,8 +108,8 @@ function toast(msg) {
 }
 
 /* ---------------- Swatches ---------------- */
-function renderSwatches(container, selectedId, onPick) {
-  container.innerHTML = COLORS.map(
+function renderSwatches(container, selectedId, onPick, colours = COLORS) {
+  container.innerHTML = colours.map(
     (c) =>
       `<button type="button" class="swatch" style="--c:${c.hex}" data-color="${c.id}" aria-pressed="${c.id === selectedId}" aria-label="${esc(c.name[getLang()])}" title="${esc(c.name[getLang()])}"></button>`,
   ).join('');
@@ -72,17 +120,23 @@ function renderSwatches(container, selectedId, onPick) {
 }
 
 /* ---------------- Colour preview ---------------- */
-// Shows every lamp in the picked colour; "Original" restores each default.
 let paletteColour = null;
 
+// Shows the lamps sold in that colour; "Original" shows all lamps again.
 function renderPalette() {
-  renderSwatches($('#palette'), paletteColour, (id) => {
-    paletteColour = id;
-    PRODUCTS.forEach((p) => (cardColours[p.id] = id));
-    renderPalette();
-    renderGrid();
-    $$('.card').forEach((el) => el.classList.add('is-in'));
-  });
+  const offered = COLORS.filter((c) => PRODUCTS.some((p) => p.colors.includes(c.id)));
+  renderSwatches(
+    $('#palette'),
+    paletteColour,
+    (id) => {
+      paletteColour = id;
+      PRODUCTS.forEach((p) => (cardColours[p.id] = p.colors.includes(id) ? id : p.defaultColor));
+      renderPalette();
+      renderGrid();
+      $$('.card').forEach((el) => el.classList.add('is-in'));
+    },
+    offered,
+  );
   $('#paletteReset').hidden = !paletteColour;
 }
 
@@ -100,7 +154,8 @@ const cardColours = {};
 
 function renderGrid() {
   const grid = $('#productGrid');
-  grid.innerHTML = PRODUCTS.map((p) => {
+  const shown = paletteColour ? PRODUCTS.filter((p) => p.colors.includes(paletteColour)) : PRODUCTS;
+  grid.innerHTML = shown.map((p) => {
     const d = dimensions(p, 'M');
     return `
       <article class="card reveal" data-id="${p.id}">
@@ -127,21 +182,22 @@ function renderGrid() {
       cardColours[p.id] = id;
       $('.visual', card).outerHTML = visualHtml(p, id);
       $('.card__colour', card).textContent = colourName(id);
-      renderSwatches(swatchBox, id, pick);
+      renderSwatches(swatchBox, id, pick, coloursOf(p));
     };
-    renderSwatches(swatchBox, cardColours[p.id], pick);
+    renderSwatches(swatchBox, cardColours[p.id], pick, coloursOf(p));
     $('.card__media', card).addEventListener('click', () => openConfigurator(p.id, cardColours[p.id]));
   });
   observeReveal();
 }
 
 /* ---------------- Product detail ---------------- */
-const cfg = { product: null, colorId: '', size: 'M', qty: 1 };
+const cfg = { product: null, colorId: '', size: 'M', qty: 1, shown: '' };
 const cfgDialog = $('#configurator');
 
 function openConfigurator(productId, colorId) {
   cfg.product = productById(productId);
-  cfg.colorId = colorId || cfg.product.defaultColor;
+  cfg.colorId = cfg.product.colors.includes(colorId) ? colorId : cfg.product.defaultColor;
+  cfg.shown = '';
   cfg.size = 'M';
   cfg.qty = 1;
   renderConfigurator();
@@ -152,7 +208,13 @@ function renderConfigurator() {
   const p = cfg.product;
   if (!p) return;
   const dims = dimensions(p, cfg.size);
-  $('#cfgVisual').innerHTML = visualHtml(p, cfg.colorId);
+  // Re-render the gallery only when the lamp or colour changes (not on size/qty).
+  const shown = `${p.id}|${cfg.colorId}|${getLang()}`;
+  if (cfg.shown !== shown) {
+    cfg.shown = shown;
+    $('#cfgVisual').innerHTML = galleryHtml(p, cfg.colorId);
+    initGallery($('#cfgVisual'));
+  }
   $('#cfgType').textContent = t(`type.${p.type}`);
   $('#cfgName').textContent = p.name;
   $('#cfgTagline').textContent = p.tagline[getLang()];
@@ -162,10 +224,15 @@ function renderConfigurator() {
   $('#cfgQty').textContent = cfg.qty;
   $('#cfgTotal').textContent = money(unitPrice(p, cfg.size) * cfg.qty);
 
-  renderSwatches($('#cfgSwatches'), cfg.colorId, (id) => {
-    cfg.colorId = id;
-    renderConfigurator();
-  });
+  renderSwatches(
+    $('#cfgSwatches'),
+    cfg.colorId,
+    (id) => {
+      cfg.colorId = id;
+      renderConfigurator();
+    },
+    coloursOf(p),
+  );
 
   $('#cfgSizes').innerHTML = SIZES.map((s) => {
     const d = dimensions(p, s.id);

@@ -156,9 +156,13 @@
         <label class="field"><span>Опис — нідерландською</span><textarea name="tagline_nl" rows="2" maxlength="300"></textarea></label>
         <label class="field"><span>Опис — англійською</span><textarea name="tagline_en" rows="2" maxlength="300"></textarea></label>
 
+        <h3>Кольори</h3>
+        <p class="hint">Позначте кольори, в яких є ця лампа. Покупці бачать і можуть замовити тільки їх.</p>
+        <div class="colour-picks" id="colourPicks"></div>
+
         <h3>Фото</h3>
-        <p class="hint"><b>День</b> — лампа вимкнена (світлий сайт). <b>Ніч</b> — лампа світиться (сайт після 19:00 або коли відвідувач перемкне на «Ніч»). «Основне» показується для всіх кольорів; для конкретного кольору можна додати окреме фото. JPG, PNG або WebP до 8 МБ, краще вертикальне 5:6.</p>
-        <div class="photos" id="photoGrid"></div>
+        <p class="hint">До 12 фото на колір — на сайті їх можна гортати (стрілки або свайп). Перше фото показується в каталозі. <b>День</b> — лампа вимкнена, <b>Ніч</b> — лампа світиться (сайт після 19:00 або в режимі «Ніч»); нічне фото необов’язкове. «Для всіх кольорів» показується, якщо для кольору немає своїх фото. JPG, PNG або WebP до 8 МБ, краще вертикальні 5:6. Можна вибрати кілька файлів одразу.</p>
+        <div class="gallery-edit" id="photoGrid"></div>
       </div>
       <div class="editor__foot">
         <p class="error" id="productError" role="alert"></p>
