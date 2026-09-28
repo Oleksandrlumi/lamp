@@ -66,27 +66,27 @@ function renderSwatches(container, selectedId, onPick) {
   };
 }
 
-/* ---------------- Palette ---------------- */
+/* ---------------- Colour preview ---------------- */
+// Shows every lamp in the picked colour; "Original" restores each default.
 let paletteColour = null;
 
 function renderPalette() {
-  $('#palette').innerHTML = COLORS.map(
-    (c) =>
-      `<button type="button" class="band${isDark(c.hex) ? ' is-dark' : ''}${c.id === paletteColour ? ' is-active' : ''}" style="--c:${c.hex}" data-color="${c.id}" aria-label="${esc(c.name[getLang()])}">
-        <span class="band__label"><b>${esc(c.name[getLang()])}</b></span>
-      </button>`,
-  ).join('');
+  renderSwatches($('#palette'), paletteColour, (id) => {
+    paletteColour = id;
+    PRODUCTS.forEach((p) => (cardColours[p.id] = id));
+    renderPalette();
+    renderGrid();
+    $$('.card').forEach((el) => el.classList.add('is-in'));
+  });
+  $('#paletteReset').hidden = !paletteColour;
 }
 
-$('#palette').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-color]');
-  if (!b) return;
-  paletteColour = b.dataset.color;
-  PRODUCTS.forEach((p) => (cardColours[p.id] = paletteColour));
+$('#paletteReset').addEventListener('click', () => {
+  paletteColour = null;
+  PRODUCTS.forEach((p) => (cardColours[p.id] = p.defaultColor));
   renderPalette();
   renderGrid();
   $$('.card').forEach((el) => el.classList.add('is-in'));
-  $('#collection').scrollIntoView({ behavior: 'smooth' });
 });
 
 /* ---------------- Product grid ---------------- */
