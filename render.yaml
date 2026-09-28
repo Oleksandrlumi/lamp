@@ -1,0 +1,23 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# In Render: New → Blueprint → choose this repository.
+services:
+  - type: web
+    name: lumi-shop
+    runtime: node
+    plan: starter            # a paid plan is required for a persistent disk
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/catalog
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATA_DIR
+        value: /var/data
+      - key: ADMIN_USER
+        sync: false          # Render asks for the value when you create the service
+      - key: ADMIN_PASSWORD
+        sync: false
+    disk:
+      name: lumi-data
+      mountPath: /var/data   # products, photos, orders and backups live here
+      sizeGB: 1

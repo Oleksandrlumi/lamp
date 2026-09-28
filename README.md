@@ -36,6 +36,9 @@ npm run set-admin
 
 Dit vraagt om gebruikersnaam en wachtwoord, schrijft `ADMIN_USER` en `ADMIN_PASSWORD_HASH` naar `.env` en toont de waarden om bij je hosting in te stellen.
 
+Alternatief bij hosting: zet `ADMIN_USER` en `ADMIN_PASSWORD` (min. 12 tekens) als omgevingsvariabelen.
+Het wachtwoord wordt bij het starten in het geheugen gehasht en nergens opgeslagen of gelogd.
+
 ## Lokaal starten
 
 Vereist Node.js 20.12 of nieuwer.
@@ -52,6 +55,9 @@ Winkel: http://localhost:8080 · Admin: http://localhost:8080/admin
 
 De site heeft nu een (kleine) Node.js-server nodig — GitHub Pages volstaat niet meer.
 Geschikt: Render, Railway, Fly.io, een VPS (bijv. Hetzner) enz.
+
+**Render (eenvoudigst):** in Render → *New* → *Blueprint* → kies deze repository. `render.yaml` regelt de rest
+(Node, permanente schijf voor `data/`, HTTPS). Vul bij het aanmaken `ADMIN_USER` en `ADMIN_PASSWORD` in.
 
 Belangrijk:
 - **Altijd via HTTPS** en met `NODE_ENV=production`.

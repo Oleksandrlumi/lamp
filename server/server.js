@@ -6,6 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import {
+  hashPassword,
   verifyPassword,
   safeEqual,
   createSession,
@@ -26,14 +27,25 @@ try {
 const PROD = process.env.NODE_ENV === 'production';
 const PORT = Number(process.env.PORT) || 8080;
 const ADMIN_USER = process.env.ADMIN_USER || '';
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
+// Preferred: ADMIN_PASSWORD_HASH (from `npm run set-admin`). For hosting
+// dashboards where running a script is awkward, ADMIN_PASSWORD may be set
+// instead; it is hashed in memory at startup and never logged or stored.
+let ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';
+if (!ADMIN_PASSWORD_HASH && process.env.ADMIN_PASSWORD) {
+  if (process.env.ADMIN_PASSWORD.length < 12) {
+    console.warn('⚠  ADMIN_PASSWORD must be at least 12 characters — the admin panel is disabled.');
+  } else {
+    ADMIN_PASSWORD_HASH = await hashPassword(process.env.ADMIN_PASSWORD);
+  }
+  delete process.env.ADMIN_PASSWORD;
+}
 // Behind a reverse proxy (Render, Railway, nginx…) set TRUST_PROXY=1 so the
 // real client IP is used for login rate limiting.
 const TRUST_PROXY = process.env.TRUST_PROXY || (PROD ? '1' : '');
 const COOKIE = PROD ? '__Host-lumi_admin' : 'lumi_admin';
 
 if (!ADMIN_USER || !ADMIN_PASSWORD_HASH) {
-  console.warn('⚠  ADMIN_USER / ADMIN_PASSWORD_HASH not set — the admin panel is disabled. Run `npm run set-admin`.');
+  console.warn('⚠  ADMIN_USER and ADMIN_PASSWORD(_HASH) not set — the admin panel is disabled. Run `npm run set-admin`.');
 }
 
 await initStore();
