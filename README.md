@@ -30,6 +30,10 @@ Op `/admin` beheer je producten, prijzen, foto's, verzendkosten en zie je bestel
 - CSRF-token + Origin-controle op elke wijziging; strikte Content-Security-Policy en andere security-headers.
 - Alle invoer wordt op de server gevalideerd; uploads alleen echte JPG/PNG/WebP (gecontroleerd op inhoud), max. 8 MB, willekeurige bestandsnaam.
 - Bij elke wijziging wordt een back-up van de catalogus bewaard in `data/backups/` (laatste 200). Alle acties staan in `data/audit.log`.
+- **Tweestapsverificatie (2FA)**: in *Безпека* aan te zetten; daarna is naast het wachtwoord een 6-cijferige code uit een authenticator-app nodig (Google/Microsoft Authenticator, 1Password). Een code kan maar één keer gebruikt worden. Telefoon kwijt: zet tijdelijk `ADMIN_2FA_RESET=1` bij de hosting, herstart, log in en verwijder de variabele weer.
+- **Foto's worden opgeschoond**: GPS-locatie, XMP/IPTC, tekstvelden en data achter het einde van het bestand worden verwijderd (de oriëntatie blijft behouden). Kapotte of vermomde bestanden worden geweigerd.
+- **Volledige back-up downloaden** (*Резервна копія*): ZIP met catalogus, bestellingen, foto's en logboek. Vraagt opnieuw om wachtwoord (en 2FA-code). Het 2FA-geheim en `.env` zitten er nooit in. Terugzetten: server stoppen, bestanden in `DATA_DIR` plaatsen, server starten.
+- `audit.log` wordt bij 5 MB geroteerd.
 - Prijzen en de eerste-bestelling-korting worden bij een bestelling altijd op de server berekend.
 
 **Login instellen of wijzigen**
@@ -76,6 +80,9 @@ server/server.js        webserver, API en beveiliging
 server/auth.js          wachtwoord-hash, sessies, brute-force-bescherming
 server/store.js         opslag (JSON) met back-ups
 server/validate.js      invoercontrole en prijsberekening
+server/images.js        controle en opschoning van geüploade foto's
+server/totp.js          tweestapsverificatie (TOTP)
+server/zip.js           back-up als ZIP
 server/seed-catalog.json   startcatalogus (eerste start)
 scripts/set-admin.js    login instellen
 public/                 de winkel (HTML/CSS/JS) en public/admin/ (adminpaneel)

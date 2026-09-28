@@ -16,7 +16,23 @@ import {
   recordLoginFailure,
   clearLoginFailures,
 } from './auth.js';
-import { initStore, getCatalog, getOrders, saveCatalog, addOrder, audit, UPLOAD_DIR } from './store.js';
+import {
+  initStore,
+  getCatalog,
+  getOrders,
+  saveCatalog,
+  addOrder,
+  audit,
+  readAudit,
+  listUploads,
+  readSecurity,
+  saveSecurity,
+  clearSecurity,
+  UPLOAD_DIR,
+} from './store.js';
+import { generateSecret, verifyTotp, otpauthUri } from './totp.js';
+import { sanitizeImage, ImageError } from './images.js';
+import { writeZip } from './zip.js';
 import { validateProduct, validateSettings, validateOrder, orderTotals, slugify, ValidationError } from './validate.js';
 
 const root = path.dirname(fileURLToPath(import.meta.url));
@@ -49,6 +65,17 @@ if (!ADMIN_USER || !ADMIN_PASSWORD_HASH) {
 }
 
 await initStore();
+
+// Two-factor login (TOTP). Enabled from the admin panel; the secret lives in
+// data/security.json. Emergency switch if the phone is lost: set
+// ADMIN_2FA_RESET=1 in the hosting settings, restart, then remove it again.
+if (process.env.ADMIN_2FA_RESET === '1') {
+  await clearSecurity();
+  console.warn('⚠  Two-factor login was reset by ADMIN_2FA_RESET=1 — remove this setting now.');
+}
+let security = await readSecurity();
+const twoFactorOn = () => Boolean(security.totpSecret);
+
 const app = express();
 app.disable('x-powered-by');
 if (TRUST_PROXY) app.set('trust proxy', /^\d+$/.test(TRUST_PROXY) ? Number(TRUST_PROXY) : TRUST_PROXY);
@@ -83,7 +110,12 @@ app.use((req, res, next) => {
 function readCookie(req, name) {
   for (const part of (req.headers.cookie || '').split(';')) {
     const [k, ...v] = part.trim().split('=');
-    if (k === name) return decodeURIComponent(v.join('='));
+    if (k !== name) continue;
+    try {
+      return decodeURIComponent(v.join('='));
+    } catch {
+      return '';
+    }
   }
   return '';
 }
@@ -102,6 +134,7 @@ const noStore = (req, res, next) => {
 // Reject cross-site requests: the Origin header (sent by browsers on POST/PUT/
 // DELETE) must match this host.
 function sameOrigin(req) {
+  if (req.get('sec-fetch-site') === 'cross-site') return false;
   const origin = req.get('origin');
   if (!origin) return true;
   try {
@@ -165,24 +198,37 @@ const admin = express.Router();
 admin.use(noStore);
 admin.use(express.json({ limit: '64kb' }));
 
+// Tells the login form whether to ask for a 2FA code.
+admin.get('/login-options', (req, res) => res.json({ totp: twoFactorOn() }));
+
+// Accepts a TOTP code once (a code can't be reused within its time window).
+async function checkTotp(code) {
+  if (!twoFactorOn()) return true;
+  const counter = verifyTotp(security.totpSecret, String(code || ''), security.lastCounter ?? -1);
+  if (counter < 0) return false;
+  security = { ...security, lastCounter: counter };
+  await saveSecurity(security);
+  return true;
+}
+
 admin.post('/login', async (req, res) => {
   if (!ADMIN_USER || !ADMIN_PASSWORD_HASH) return res.status(503).json({ error: 'Адмінку не налаштовано' });
   if (!sameOrigin(req)) return res.status(403).json({ error: 'Forbidden' });
   const wait = loginBlocked(req.ip);
   if (wait) return res.status(429).json({ error: `Забагато спроб. Спробуйте через ${wait} хв.` });
 
-  const { username, password } = req.body || {};
+  const { username, password, code } = req.body || {};
   if (typeof username !== 'string' || typeof password !== 'string' || password.length > 256 || username.length > 256) {
     return res.status(400).json({ error: 'Невірні дані' });
   }
   // Always run the (slow) password check so timing doesn't reveal the username.
   const passwordOk = await verifyPassword(password, ADMIN_PASSWORD_HASH);
-  const ok = safeEqual(username, ADMIN_USER) && passwordOk;
+  const ok = safeEqual(username, ADMIN_USER) && passwordOk && (await checkTotp(code));
   if (!ok) {
     recordLoginFailure(req.ip);
     audit({ action: 'login_failed', ip: req.ip });
     await new Promise((r) => setTimeout(r, 400 + Math.random() * 400));
-    return res.status(401).json({ error: 'Невірний логін або пароль' });
+    return res.status(401).json({ error: twoFactorOn() ? 'Невірний логін, пароль або код' : 'Невірний логін або пароль' });
   }
   clearLoginFailures(req.ip);
   const old = readCookie(req, COOKIE);
@@ -287,24 +333,17 @@ admin.put('/settings', async (req, res, next) => {
   }
 });
 
-// Photo upload: the raw image is the request body. Only real JPEG/PNG/WebP
-// files (checked by their magic bytes) are accepted, and they get a random name.
-const IMAGE_TYPES = [
-  { ext: 'jpg', test: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
-  { ext: 'png', test: (b) => b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) },
-  { ext: 'webp', test: (b) => b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP' },
-];
+// Photo upload: the raw image is the request body. Only well-formed JPEG/PNG/
+// WebP files are accepted; location (GPS) and other metadata are removed and
+// the file gets a random name.
 admin.post(
   '/uploads',
   express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '8mb' }),
   async (req, res, next) => {
     try {
-      const buf = req.body;
-      if (!Buffer.isBuffer(buf) || buf.length < 12) return res.status(400).json({ error: 'Завантажте JPG, PNG або WebP до 8 МБ' });
-      const type = IMAGE_TYPES.find((t) => t.test(buf));
-      if (!type) return res.status(400).json({ error: 'Файл не є зображенням JPG, PNG або WebP' });
-      const name = `${crypto.randomBytes(16).toString('hex')}.${type.ext}`;
-      await fs.writeFile(path.join(UPLOAD_DIR, name), buf, { mode: 0o644 });
+      const { ext, data } = sanitizeImage(req.body);
+      const name = `${crypto.randomBytes(16).toString('hex')}.${ext}`;
+      await fs.writeFile(path.join(UPLOAD_DIR, name), data, { mode: 0o644 });
       audit({ action: 'upload', file: name, ip: req.ip });
       res.status(201).json({ url: `/uploads/${name}` });
     } catch (err) {
@@ -312,6 +351,116 @@ admin.post(
     }
   },
 );
+
+// Sensitive actions ask for the password again (and the 2FA code when
+// required). Failures count towards the login lockout. Sends the error
+// response itself and returns false when the check fails.
+async function reauth(req, res, action, { code = false } = {}) {
+  const wait = loginBlocked(req.ip);
+  if (wait) {
+    res.status(429).json({ error: `Забагато спроб. Спробуйте через ${wait} хв.` });
+    return false;
+  }
+  const password = req.body?.password;
+  const ok =
+    typeof password === 'string' &&
+    password.length <= 256 &&
+    (await verifyPassword(password, ADMIN_PASSWORD_HASH)) &&
+    (!code || (await checkTotp(req.body?.code)));
+  if (!ok) {
+    recordLoginFailure(req.ip);
+    audit({ action: `${action}_denied`, ip: req.ip });
+    await new Promise((r) => setTimeout(r, 400 + Math.random() * 400));
+    res.status(403).json({ error: code ? 'Невірний пароль або код' : 'Невірний пароль' });
+    return false;
+  }
+  return true;
+}
+
+/* ---------------- Two-factor setup ---------------- */
+admin.get('/2fa', (req, res) => res.json({ enabled: twoFactorOn() }));
+
+// Step 1: after re-entering the password, get a new secret to add to an
+// authenticator app. It is only kept in this session until confirmed.
+admin.post('/2fa/setup', async (req, res, next) => {
+  try {
+    if (twoFactorOn()) return res.status(400).json({ error: 'Двофакторний вхід уже увімкнено' });
+    if (!(await reauth(req, res, '2fa_setup'))) return;
+    const secret = generateSecret();
+    req.session.pendingTotp = secret;
+    res.json({ secret, uri: otpauthUri(secret, ADMIN_USER) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Step 2: confirm with a code from the app; only then 2FA is switched on.
+admin.post('/2fa/enable', async (req, res, next) => {
+  try {
+    const secret = req.session.pendingTotp;
+    if (!secret) return res.status(400).json({ error: 'Спочатку почніть налаштування' });
+    const counter = verifyTotp(secret, String(req.body?.code || ''));
+    if (counter < 0) return res.status(400).json({ error: 'Невірний код. Перевірте час на телефоні й спробуйте ще раз.' });
+    security = { totpSecret: secret, lastCounter: counter };
+    await saveSecurity(security);
+    delete req.session.pendingTotp;
+    audit({ action: '2fa_enabled', ip: req.ip });
+    res.json({ enabled: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+admin.post('/2fa/disable', async (req, res, next) => {
+  try {
+    if (!twoFactorOn()) return res.json({ enabled: false });
+    if (!(await reauth(req, res, '2fa_disable', { code: true }))) return;
+    await clearSecurity();
+    security = {};
+    audit({ action: '2fa_disabled', ip: req.ip });
+    res.json({ enabled: false });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Full backup (catalogue, orders, photos, audit log) as a ZIP download.
+// It contains customer data, so the password (and 2FA code, if enabled) must
+// be entered again.
+admin.post('/backup', async (req, res, next) => {
+  try {
+    if (!(await reauth(req, res, 'backup', { code: twoFactorOn() }))) return;
+    const uploads = await listUploads();
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[T:]/g, '-');
+    audit({ action: 'backup_download', ip: req.ip, photos: uploads.length });
+    res.set({
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="lumi-backup-${stamp}.zip"`,
+    });
+    const readme = [
+      'LUMI backup',
+      `Created: ${new Date().toISOString()}`,
+      '',
+      'catalog.json  products, prices, colours, shipping',
+      'orders.json   orders (contains customer personal data - keep this file private)',
+      'audit.log     admin activity log',
+      'uploads/      product photos',
+      '',
+      'Restore: stop the server, put these files in the data directory (DATA_DIR), start the server.',
+    ].join('\n');
+    await writeZip(res, [
+      { name: 'README.txt', data: Buffer.from(readme) },
+      { name: 'catalog.json', data: Buffer.from(JSON.stringify(getCatalog(), null, 2)) },
+      { name: 'orders.json', data: Buffer.from(JSON.stringify(getOrders(), null, 2)) },
+      { name: 'audit.log', load: readAudit },
+      ...uploads.map((f) => ({ name: `uploads/${f}`, load: () => fs.readFile(path.join(UPLOAD_DIR, f)) })),
+    ]);
+    res.end();
+  } catch (err) {
+    if (res.headersSent) return res.destroy(err);
+    next(err);
+  }
+});
 
 app.use('/api/admin', admin);
 
@@ -336,7 +485,7 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
 /* ---------------- Errors ---------------- */
 app.use((err, req, res, next) => {
-  if (err instanceof ValidationError) return res.status(400).json({ error: err.message });
+  if (err instanceof ValidationError || err instanceof ImageError) return res.status(400).json({ error: err.message });
   if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Файл або запит завеликий' });
   if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Невірні дані' });
   console.error(err);

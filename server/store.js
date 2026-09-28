@@ -10,7 +10,9 @@ const BACKUP_DIR = path.join(DATA_DIR, 'backups');
 const CATALOG = path.join(DATA_DIR, 'catalog.json');
 const ORDERS = path.join(DATA_DIR, 'orders.json');
 const AUDIT = path.join(DATA_DIR, 'audit.log');
+const SECURITY = path.join(DATA_DIR, 'security.json'); // 2FA secret — never included in backups
 const MAX_BACKUPS = 200;
+const MAX_AUDIT_BYTES = 5 * 1024 * 1024; // rotate audit.log at 5 MB (keeps one old file)
 
 let catalog;
 let orders;
@@ -92,5 +94,20 @@ export const addOrder = (order) =>
     orders = next;
   });
 
-export const audit = (entry) =>
-  fs.appendFile(AUDIT, `${JSON.stringify({ at: new Date().toISOString(), ...entry })}\n`, { mode: 0o600 }).catch(() => {});
+export async function audit(entry) {
+  try {
+    const { size } = await fs.stat(AUDIT).catch(() => ({ size: 0 }));
+    if (size > MAX_AUDIT_BYTES) await fs.rename(AUDIT, `${AUDIT}.1`);
+    await fs.appendFile(AUDIT, `${JSON.stringify({ at: new Date().toISOString(), ...entry })}\n`, { mode: 0o600 });
+  } catch {}
+}
+
+export const readSecurity = () => readJson(SECURITY, {});
+export const saveSecurity = (data) => serial(() => writeAtomic(SECURITY, data));
+export const clearSecurity = () => fs.rm(SECURITY, { force: true });
+
+export const readAudit = () => fs.readFile(AUDIT).catch(() => Buffer.alloc(0));
+
+// Only files the upload handler itself created (random hex names).
+export const UPLOAD_NAME = /^[a-f0-9]{32}\.(jpg|png|webp)$/;
+export const listUploads = async () => (await fs.readdir(UPLOAD_DIR)).filter((f) => UPLOAD_NAME.test(f)).sort();

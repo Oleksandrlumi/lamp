@@ -117,3 +117,14 @@ a { color: inherit; }
   .grid2, .grid3 { grid-template-columns: 1fr; }
   .top__actions a { display: none; }
 }
+
+.backup { max-width: 640px; background: var(--surface); border: 1px solid var(--line); padding: 24px 28px; }
+.backup ul { margin: 8px 0 16px; padding-left: 20px; }
+.backup__form { display: grid; gap: 4px; max-width: 360px; margin-top: 8px; }
+
+.backup h3 { font-size: 24px; margin-bottom: 8px; }
+.tfa-status { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; }
+.tfa-setup { display: grid; gap: 6px; max-width: 520px; }
+.tfa-setup ol { padding-left: 20px; display: grid; gap: 10px; margin: 0 0 12px; }
+.tfa-secret { display: block; margin: 8px 0 4px; padding: 10px 12px; background: var(--paper); border: 1px solid var(--line-strong); font: 600 16px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: 0.06em; word-break: break-all; }
+code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.95em; }

@@ -7,6 +7,7 @@ const TYPES = { table: 'Настільна', pendant: 'Підвісна' };
 
 let csrf = '';
 let catalog = null;
+let twoFactor = false;
 
 /* ---------------- API ---------------- */
 class AuthError extends Error {}
@@ -45,8 +46,18 @@ const fail = (err) => {
 };
 
 /* ---------------- Login ---------------- */
+async function loadLoginOptions() {
+  try {
+    const res = await fetch('/api/admin/login-options', { credentials: 'same-origin' });
+    twoFactor = (await res.json()).totp === true;
+  } catch {}
+  $('#loginCodeField').hidden = !twoFactor;
+  $('#loginCodeField input').required = twoFactor;
+}
+
 function showLogin() {
   csrf = '';
+  loadLoginOptions();
   $('#appView').hidden = true;
   $('#loginView').hidden = false;
   $('#editor').open && $('#editor').close();
@@ -68,7 +79,7 @@ $('#loginForm').addEventListener('submit', async (e) => {
   try {
     const data = await api('/login', {
       method: 'POST',
-      body: { username: form.username.value, password: form.password.value },
+      body: { username: form.username.value, password: form.password.value, code: form.code.value },
     });
     csrf = data.csrf;
     form.reset();
@@ -92,6 +103,7 @@ $$('[data-tab]').forEach((b) =>
     $$('[data-panel]').forEach((p) => (p.hidden = p.dataset.panel !== b.dataset.tab));
     if (b.dataset.tab === 'orders') loadOrders().catch(fail);
     if (b.dataset.tab === 'settings') renderSettings();
+    if (b.dataset.tab === 'security' || b.dataset.tab === 'backup') loadTwoFactor().catch(fail);
   }),
 );
 
@@ -342,6 +354,116 @@ async function loadOrders() {
     ? `<thead><tr><th>Замовлення</th><th>Клієнт</th><th>Адреса</th><th>Товари</th><th>Сума</th></tr></thead><tbody>${rows}</tbody>`
     : '<tbody><tr><td>Замовлень поки немає.</td></tr></tbody>';
 }
+
+/* ---------------- Backup ---------------- */
+$('#backupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  const button = $('button[type=submit]', form);
+  $('#backupError').textContent = '';
+  button.disabled = true;
+  button.textContent = 'Готуємо архів…';
+  try {
+    const res = await fetch('/api/admin/backup', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrf },
+      body: JSON.stringify({ password: form.password.value, code: form.code.value }),
+    });
+    if (res.status === 401) return showLogin();
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Помилка ${res.status}`);
+    }
+    const blob = await res.blob();
+    const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') || '')?.[1] || 'lumi-backup.zip';
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), { href: url, download: name });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    toast('Резервну копію завантажено');
+  } catch (err) {
+    $('#backupError').textContent = err.message;
+  } finally {
+    form.reset();
+    button.disabled = false;
+    button.textContent = 'Завантажити резервну копію';
+  }
+});
+
+/* ---------------- Two-factor login ---------------- */
+async function loadTwoFactor() {
+  twoFactor = (await api('/2fa')).enabled;
+  $('#tfaStatus').innerHTML = twoFactor
+    ? '<span class="badge badge--ok">Увімкнено</span> Для входу потрібен код із телефона.'
+    : '<span class="badge badge--off">Вимкнено</span> Рекомендуємо увімкнути.';
+  $('#tfaStart').hidden = twoFactor;
+  $('#tfaDisable').hidden = !twoFactor;
+  $('#tfaConfirm').hidden = true;
+  $('#tfaError').textContent = '';
+  $$('[data-needs-2fa]').forEach((el) => {
+    el.hidden = !twoFactor;
+    $('input', el).required = twoFactor;
+  });
+}
+
+$('#tfaStart').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  $('#tfaError').textContent = '';
+  try {
+    const { secret } = await api('/2fa/setup', { method: 'POST', body: { password: form.password.value } });
+    form.reset();
+    $('#tfaSecret').textContent = secret.match(/.{1,4}/g).join(' ');
+    $('#tfaSecret').dataset.raw = secret;
+    $('#tfaStart').hidden = true;
+    $('#tfaConfirm').hidden = false;
+  } catch (err) {
+    if (!(err instanceof AuthError)) $('#tfaError').textContent = err.message;
+  }
+});
+
+$('#tfaCopy').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText($('#tfaSecret').dataset.raw);
+    toast('Ключ скопійовано');
+  } catch {
+    toast('Не вдалося скопіювати — перепишіть ключ вручну', true);
+  }
+});
+
+$('#tfaConfirm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  $('#tfaError').textContent = '';
+  try {
+    await api('/2fa/enable', { method: 'POST', body: { code: form.code.value } });
+    form.reset();
+    $('#tfaSecret').textContent = '';
+    delete $('#tfaSecret').dataset.raw;
+    await loadTwoFactor();
+    toast('Двофакторний вхід увімкнено');
+  } catch (err) {
+    if (!(err instanceof AuthError)) $('#tfaError').textContent = err.message;
+  }
+});
+
+$('#tfaDisable').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.currentTarget;
+  $('#tfaError').textContent = '';
+  if (!confirm('Вимкнути двофакторний вхід? Тоді для входу знову буде достатньо лише пароля.')) return;
+  try {
+    await api('/2fa/disable', { method: 'POST', body: { password: form.password.value, code: form.code.value } });
+    form.reset();
+    await loadTwoFactor();
+    toast('Двофакторний вхід вимкнено');
+  } catch (err) {
+    if (!(err instanceof AuthError)) $('#tfaError').textContent = err.message;
+  }
+});
 
 /* ---------------- Boot ---------------- */
 try {

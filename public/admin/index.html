@@ -18,6 +18,7 @@
       <h1>Вхід в адмінку</h1>
       <label class="field"><span>Логін</span><input name="username" autocomplete="username" required maxlength="256"></label>
       <label class="field"><span>Пароль</span><input name="password" type="password" autocomplete="current-password" required maxlength="256"></label>
+      <label class="field" id="loginCodeField" hidden><span>Код з додатка (6 цифр)</span><input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]*" maxlength="7"></label>
       <p class="error" id="loginError" role="alert"></p>
       <button class="btn btn--dark" type="submit">Увійти</button>
     </form>
@@ -31,6 +32,8 @@
         <button type="button" data-tab="products" class="is-active">Товари</button>
         <button type="button" data-tab="settings">Ціни й доставка</button>
         <button type="button" data-tab="orders">Замовлення</button>
+        <button type="button" data-tab="backup">Резервна копія</button>
+        <button type="button" data-tab="security">Безпека</button>
       </nav>
       <div class="top__actions">
         <a href="/" target="_blank" rel="noopener">Відкрити магазин ↗</a>
@@ -62,6 +65,58 @@
         </fieldset>
         <button class="btn btn--dark" type="submit">Зберегти</button>
       </form>
+    </section>
+
+    <section class="panel" data-panel="backup" hidden>
+      <div class="panel__head"><h2>Резервна копія</h2></div>
+      <div class="backup">
+        <p>Завантажте на свій комп’ютер архів з усім, що є в магазині:</p>
+        <ul>
+          <li>товари, ціни, кольори й доставка;</li>
+          <li>усі замовлення;</li>
+          <li>усі фото товарів;</li>
+          <li>журнал дій в адмінці.</li>
+        </ul>
+        <p class="hint">Раджу робити копію раз на тиждень і після великих змін. В архіві є особисті дані клієнтів (імена, адреси, email), тому зберігайте його в надійному місці й нікому не надсилайте.</p>
+        <form id="backupForm" class="backup__form" autocomplete="off">
+          <label class="field"><span>Для безпеки введіть пароль ще раз</span><input name="password" type="password" autocomplete="current-password" required maxlength="256"></label>
+          <label class="field" data-needs-2fa hidden><span>Код з додатка</span><input name="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7"></label>
+          <button class="btn btn--dark" type="submit">Завантажити резервну копію</button>
+          <p class="error" id="backupError" role="alert"></p>
+        </form>
+      </div>
+    </section>
+
+    <section class="panel" data-panel="security" hidden>
+      <div class="panel__head"><h2>Безпека</h2></div>
+      <div class="backup">
+        <h3>Двофакторний вхід</h3>
+        <p id="tfaStatus" class="tfa-status"></p>
+        <p class="hint">Після увімкнення для входу потрібен не лише пароль, а й 6-значний код із додатка на телефоні (Google Authenticator, Microsoft Authenticator або 1Password). Навіть якщо пароль украдуть, без телефона зайти не вийде.</p>
+
+        <form id="tfaStart" class="backup__form" autocomplete="off" hidden>
+          <label class="field"><span>Введіть пароль, щоб почати</span><input name="password" type="password" autocomplete="current-password" required maxlength="256"></label>
+          <button class="btn btn--dark" type="submit">Увімкнути двофакторний вхід</button>
+        </form>
+
+        <form id="tfaConfirm" class="tfa-setup" autocomplete="off" hidden>
+          <ol>
+            <li>Відкрийте додаток автентифікації на телефоні → «Додати» → <b>«Ввести ключ налаштування»</b>.</li>
+            <li>Назва: <b>LUMI</b>. Ключ (без пробілів):<code id="tfaSecret" class="tfa-secret"></code><button class="link-btn" type="button" id="tfaCopy">Скопіювати</button></li>
+            <li>Тип: «За часом». Введіть нижче 6 цифр, які показує додаток.</li>
+          </ol>
+          <label class="field"><span>Код з додатка</span><input name="code" inputmode="numeric" autocomplete="one-time-code" required maxlength="7"></label>
+          <button class="btn btn--dark" type="submit">Підтвердити й увімкнути</button>
+        </form>
+
+        <form id="tfaDisable" class="backup__form" autocomplete="off" hidden>
+          <label class="field"><span>Пароль</span><input name="password" type="password" autocomplete="current-password" required maxlength="256"></label>
+          <label class="field"><span>Код з додатка</span><input name="code" inputmode="numeric" autocomplete="one-time-code" required maxlength="7"></label>
+          <button class="btn btn--danger" type="submit">Вимкнути двофакторний вхід</button>
+        </form>
+        <p class="error" id="tfaError" role="alert"></p>
+        <p class="hint">Загубили телефон? У налаштуваннях хостингу додайте змінну <code>ADMIN_2FA_RESET=1</code>, перезапустіть сервер, увійдіть лише з паролем і потім приберіть цю змінну.</p>
+      </div>
     </section>
 
     <section class="panel" data-panel="orders" hidden>
