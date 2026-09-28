@@ -14,7 +14,9 @@ Lettertypen staan lokaal in `public/assets/fonts/` (geen Google Fonts — pretti
 - **10% korting op de eerste bestelling**: aangekondigd in een welkomstvenster (één keer per bezoeker), automatisch verrekend zonder code, per e-mailadres.
 - **Cookiemelding** met keuze *Akkoord* / *Alleen noodzakelijk* (opgeslagen als `lumi.consent`; de winkel gebruikt nu alleen functionele opslag).
 - **Gratis verzending in Nederland**; vaste tarieven voor BE, DE, LU, FR, AT (aan te passen in het adminpaneel).
-- **Drie talen**: Nederlands (standaard), Engels, Oekraïens.
+- **Twee talen**: Nederlands (standaard) en Engels. Het adminpaneel is in het Oekraïens.
+- **Lichtcursor**: een warme gloed volgt de muis (sterker in de nachtmodus) en licht de lampfoto's aan; uit op touchscreens en bij 'verminderde beweging'.
+- **Eigen foutpagina's**: 404 ("Hier is het licht uit" — klik op de lamp om het licht aan te doen) en 500 ("Even geen stroom").
 - Winkelmand blijft bewaard (localStorage), responsive tot mobiel.
 
 ## Adminpaneel

@@ -193,7 +193,7 @@ $('#addProduct').addEventListener('click', () =>
     heightCm: '',
     diameterCm: '',
     defaultColor: catalog.colors[0].id,
-    tagline: { nl: '', en: '', uk: '' },
+    tagline: { nl: '', en: '' },
     photos: {},
     visible: true,
   }),
@@ -214,7 +214,7 @@ function openEditor(p) {
   f.diameterCm.value = p.diameterCm;
   f.defaultColor.value = p.defaultColor;
   f.visible.checked = p.visible !== false;
-  for (const l of ['nl', 'en', 'uk']) f[`tagline_${l}`].value = p.tagline?.[l] || '';
+  for (const l of ['nl', 'en']) f[`tagline_${l}`].value = p.tagline?.[l] || '';
   renderPhotos();
   editor.showModal();
 }
@@ -283,7 +283,7 @@ pform.addEventListener('submit', async (e) => {
     diameterCm: f.diameterCm.value,
     defaultColor: f.defaultColor.value,
     visible: f.visible.checked,
-    tagline: { nl: f.tagline_nl.value, en: f.tagline_en.value, uk: f.tagline_uk.value },
+    tagline: { nl: f.tagline_nl.value, en: f.tagline_en.value },
     photos,
     photosNight,
   };

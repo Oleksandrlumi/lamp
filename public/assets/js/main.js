@@ -2,6 +2,7 @@ import { loadCatalog, PRODUCTS, COLORS, SIZES, productById, colorById, photoFor,
 import { t, setLang, getLang, onLangChange, applyTranslations, money } from './i18n.js';
 import * as cart from './cart.js';
 import { lookupAddress, NL_POSTCODE, formatPostcode } from './postcode.js';
+import { initCursorLight } from './cursor-light.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -577,6 +578,7 @@ try {
   toast(t('catalog.error'));
 }
 PRODUCTS.forEach((p) => (cardColours[p.id] = p.defaultColor));
+initCursorLight();
 updateCartCount();
 renderPalette();
 renderGrid();

@@ -479,9 +479,16 @@ app.use('/admin', noStore, (req, res, next) => {
   res.set('X-Robots-Tag', 'noindex, nofollow');
   next();
 });
-app.use(express.static(path.join(root, '..', 'public'), { dotfiles: 'deny', extensions: ['html'] }));
+const PUBLIC = path.join(root, '..', 'public');
+app.use(express.static(PUBLIC, { dotfiles: 'deny', extensions: ['html'] }));
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
+
+// Branded "light is off" page for unknown addresses.
+app.use((req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.status(404).sendFile(path.join(PUBLIC, '404.html'));
+});
 
 /* ---------------- Errors ---------------- */
 app.use((err, req, res, next) => {
@@ -489,7 +496,10 @@ app.use((err, req, res, next) => {
   if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Файл або запит завеликий' });
   if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Невірні дані' });
   console.error(err);
-  res.status(500).json({ error: 'Server error' });
+  if (res.headersSent) return res.destroy();
+  if (req.path.startsWith('/api')) return res.status(500).json({ error: 'Server error' });
+  res.set('Cache-Control', 'no-store');
+  res.status(500).sendFile(path.join(PUBLIC, '500.html'));
 });
 
 app.listen(PORT, () => console.log(`LUMI running on http://localhost:${PORT}`));

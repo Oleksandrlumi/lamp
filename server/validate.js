@@ -7,7 +7,7 @@ const fail = (msg) => {
   throw new ValidationError(msg);
 };
 
-const LANGS = ['nl', 'en', 'uk'];
+const LANGS = ['nl', 'en']; // shop languages (product descriptions)
 const PHOTO_URL = /^(\/uploads\/[a-f0-9]{32}\.(jpg|png|webp)|assets\/img\/lamps\/[A-Za-z0-9._-]{1,80})$/;
 
 function str(v, name, { min = 0, max = 200 } = {}) {
