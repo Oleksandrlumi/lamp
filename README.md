@@ -1,16 +1,18 @@
-# LUMI — 3D-geprinte designlampen
+# LUMI — sculpturale designlampen
 
-Webshop voor sculpturale lampen die op bestelling 3D-geprint worden.
+Webshop voor sculpturale designlampen die op bestelling in de gekozen kleur worden gemaakt.
 Lichte, minimalistische webshop (HTML/CSS/JS) met een kleine Node.js-server en een beveiligd adminpaneel.
 Lettertypen staan lokaal in `public/assets/fonts/` (geen Google Fonts — prettig voor de AVG/GDPR).
 
 ## Functies
 
-- **Kleurkeuze uit tien vaste filamentkleuren** — via de kleurenbalk op de homepage (toont de hele collectie in die kleur), per productkaart of in het productvenster.
-- **Productfoto's per kleur** (zie hieronder). Zolang er geen foto is, wordt de lamp getoond als een stijlvol kleurvlak met de naam.
+- **Dag/nacht-modus** — overdag een lichte site met foto's van de lamp uit; 's avonds (19:00–07:00, of via de knop Dag/Nacht) een donkere site met foto's waarop de lampen branden.
+- **Kleurkeuze uit tien vaste kleuren** — via de kleurenrij boven de collectie (toont alle lampen in die kleur), per productkaart of in het productvenster.
+- **Productfoto's per kleur, voor dag én nacht** (zie hieronder). Zolang er geen foto is, wordt de lamp getoond als een effen kleurvlak (dat 's nachts zacht gloeit).
 - **Maten** S / M / L met eigen prijs en afmetingen.
 - **Adres via postcode**: bij Nederlandse adressen worden straat en plaats automatisch ingevuld op basis van postcode + huisnummer (gratis [PDOK Locatieserver](https://api.pdok.nl/bzk/locatieserver/search/v3_1/ui/), BAG-data, geen API-sleutel). Beschikbare toevoegingen worden als suggestie getoond.
-- **10% korting op de eerste bestelling**: automatisch verrekend, zonder code, per e-mailadres.
+- **10% korting op de eerste bestelling**: aangekondigd in een welkomstvenster (één keer per bezoeker), automatisch verrekend zonder code, per e-mailadres.
+- **Cookiemelding** met keuze *Akkoord* / *Alleen noodzakelijk* (opgeslagen als `lumi.consent`; de winkel gebruikt nu alleen functionele opslag).
 - **Gratis verzending in Nederland**; vaste tarieven voor BE, DE, LU, FR, AT (aan te passen in het adminpaneel).
 - **Drie talen**: Nederlands (standaard), Engels, Oekraïens.
 - Winkelmand blijft bewaard (localStorage), responsive tot mobiel.
@@ -18,6 +20,8 @@ Lettertypen staan lokaal in `public/assets/fonts/` (geen Google Fonts — pretti
 ## Adminpaneel
 
 Op `/admin` beheer je producten, prijzen, foto's, verzendkosten en zie je bestellingen.
+
+**Foto's toevoegen:** open een product → *Фото* → upload per kleur (of *Основне* voor alle kleuren) een **dag**-foto (lamp uit) en een **nacht**-foto (lamp aan). Staand formaat 5:6 werkt het mooist.
 
 **Beveiliging**
 - Wachtwoord wordt alleen als scrypt-hash opgeslagen (in `.env` / omgevingsvariabelen), nooit in git.
