@@ -1,0 +1,18 @@
+{
+  "name": "lumi-shop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LUMI — 3D-printed lamp webshop with admin panel",
+  "type": "module",
+  "engines": {
+    "node": ">=20.12"
+  },
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "set-admin": "node scripts/set-admin.js"
+  },
+  "dependencies": {
+    "express": "^4.22.3"
+  }
+}

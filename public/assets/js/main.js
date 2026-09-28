@@ -1,4 +1,4 @@
-import { PRODUCTS, COLORS, SIZES, productById, colorById, photoFor, isDark, unitPrice, dimensions } from './catalog.js';
+import { loadCatalog, PRODUCTS, COLORS, SIZES, productById, colorById, photoFor, isDark, unitPrice, dimensions } from './catalog.js';
 import { t, setLang, getLang, onLangChange, applyTranslations, money } from './i18n.js';
 import * as cart from './cart.js';
 import { lookupAddress, NL_POSTCODE, formatPostcode } from './postcode.js';
@@ -73,7 +73,7 @@ function renderPalette() {
   $('#palette').innerHTML = COLORS.map(
     (c) =>
       `<button type="button" class="band${isDark(c.hex) ? ' is-dark' : ''}${c.id === paletteColour ? ' is-active' : ''}" style="--c:${c.hex}" data-color="${c.id}" aria-label="${esc(c.name[getLang()])}">
-        <span class="band__label"><b>${esc(c.name[getLang()])}</b>${c.hex}</span>
+        <span class="band__label"><b>${esc(c.name[getLang()])}</b></span>
       </button>`,
   ).join('');
 }
@@ -90,7 +90,8 @@ $('#palette').addEventListener('click', (e) => {
 });
 
 /* ---------------- Product grid ---------------- */
-const cardColours = Object.fromEntries(PRODUCTS.map((p) => [p.id, p.defaultColor]));
+// Colour shown per product card; filled once the catalogue has loaded.
+const cardColours = {};
 
 function renderGrid() {
   const grid = $('#productGrid');
@@ -417,11 +418,17 @@ function validate() {
   return !first;
 }
 
-form.addEventListener('submit', (e) => {
+let placing = false;
+form.addEventListener('submit', async (e) => {
   e.preventDefault();
-  if (!validate()) return;
+  if (placing || !validate()) return;
   const v = (n) => field(n).value.trim();
-  const order = cart.placeOrder({
+  const button = $('#placeOrder');
+  placing = true;
+  button.disabled = true;
+  let order;
+  try {
+    order = await cart.placeOrder({
     customer: { email: v('email'), firstName: v('firstName'), lastName: v('lastName'), phone: v('phone') },
     address: {
       country: v('country'),
@@ -431,7 +438,15 @@ form.addEventListener('submit', (e) => {
       street: v('street'),
       city: v('city'),
     },
-  });
+    });
+  } catch (err) {
+    console.error(err);
+    toast(t('co.error'));
+    return;
+  } finally {
+    placing = false;
+    button.disabled = false;
+  }
   $('#doneText').innerHTML = t('co.done.text', { id: esc(order.id), email: esc(order.email) });
   $('#doneSaved').textContent = order.discount > 0 ? t('co.done.saved', { amount: money(order.discount) }) : '';
   checkoutDialog.classList.add('is-done');
@@ -478,6 +493,14 @@ $('#year').textContent = new Date().getFullYear();
 /* ---------------- Boot ---------------- */
 applyTranslations();
 syncLangButtons();
+try {
+  await loadCatalog();
+  cart.initCart();
+} catch (err) {
+  console.error(err);
+  toast(t('catalog.error'));
+}
+PRODUCTS.forEach((p) => (cardColours[p.id] = p.defaultColor));
 updateCartCount();
 renderPalette();
 renderGrid();

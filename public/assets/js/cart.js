@@ -1,10 +1,7 @@
 // Cart state, persistence and pricing rules.
-import { productById, colorById, unitPrice } from './catalog.js';
+import { productById, colorById, sizeById, unitPrice, SHIPPING } from './catalog.js';
 
 export const FIRST_ORDER_DISCOUNT = 0.1;
-
-// Shipping rates in euro. The Netherlands ships free.
-export const SHIPPING = { NL: 0, BE: 6.95, DE: 7.95, LU: 9.95, FR: 12.95, AT: 12.95 };
 
 const CART_KEY = 'lumi.cart';
 const ORDERS_KEY = 'lumi.orders';
@@ -24,7 +21,13 @@ function write(key, value) {
   } catch {}
 }
 
-let items = read(CART_KEY, []).filter((i) => productById(i.productId) && colorById(i.colorId));
+let items = [];
+
+// Call once the catalogue is loaded: drops items that no longer exist.
+export function initCart() {
+  items = read(CART_KEY, []).filter((i) => productById(i.productId) && colorById(i.colorId) && sizeById(i.size));
+  emit();
+}
 
 function emit() {
   write(CART_KEY, items);
@@ -61,9 +64,8 @@ export const lineTotal = (item) => unitPrice(productById(item.productId), item.s
 
 const round2 = (n) => Math.round(n * 100) / 100;
 
-// Whether an email address qualifies for the first-order discount.
-// Note: this only knows about orders placed in this browser; a production
-// shop must verify this on the server when the order is created.
+// Preview of whether an email qualifies for the first-order discount, based on
+// orders placed in this browser. The server makes the final decision.
 export function isFirstOrder(email) {
   const e = (email || '').trim().toLowerCase();
   if (!e) return true;
@@ -79,22 +81,21 @@ export function totals({ country = 'NL', firstOrder = true } = {}) {
   return { subtotal, discount, shipping, total, vat };
 }
 
-export function placeOrder({ customer, address }) {
-  const email = customer.email.trim().toLowerCase();
-  const firstOrder = isFirstOrder(email);
-  const sums = totals({ country: address.country, firstOrder });
-  const id = `LUMI-${Date.now().toString(36).toUpperCase().slice(-6)}`;
-  const order = {
-    id,
-    email,
-    customer,
-    address,
-    items,
-    ...sums,
-    firstOrder,
-    createdAt: new Date().toISOString(),
-  };
-  write(ORDERS_KEY, [...read(ORDERS_KEY, []), order]);
+// Sends the order to the server, which recalculates all prices and decides on
+// the first-order discount.
+export async function placeOrder({ customer, address }) {
+  const res = await fetch('/api/orders', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      customer,
+      address,
+      items: items.map(({ productId, colorId, size, qty }) => ({ productId, colorId, size, qty })),
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Order failed (${res.status})`);
+  write(ORDERS_KEY, [...read(ORDERS_KEY, []), { id: data.id, email: data.email }]);
   clearCart();
-  return order;
+  return data;
 }

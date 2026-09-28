@@ -1,7 +1,8 @@
 # LUMI — 3D-geprinte designlampen
 
 Webshop voor sculpturale lampen die op bestelling 3D-geprint worden.
-Statische site (HTML/CSS/JS, geen build-stap) in een lichte, minimalistische stijl.
+Lichte, minimalistische webshop (HTML/CSS/JS) met een kleine Node.js-server en een beveiligd adminpaneel.
+Lettertypen staan lokaal in `public/assets/fonts/` (geen Google Fonts — prettig voor de AVG/GDPR).
 
 ## Functies
 
@@ -10,64 +11,69 @@ Statische site (HTML/CSS/JS, geen build-stap) in een lichte, minimalistische sti
 - **Maten** S / M / L met eigen prijs en afmetingen.
 - **Adres via postcode**: bij Nederlandse adressen worden straat en plaats automatisch ingevuld op basis van postcode + huisnummer (gratis [PDOK Locatieserver](https://api.pdok.nl/bzk/locatieserver/search/v3_1/ui/), BAG-data, geen API-sleutel). Beschikbare toevoegingen worden als suggestie getoond.
 - **10% korting op de eerste bestelling**: automatisch verrekend, zonder code, per e-mailadres.
-- **Gratis verzending in Nederland**; vaste tarieven voor BE, DE, LU, FR, AT (`SHIPPING` in `assets/js/cart.js`).
+- **Gratis verzending in Nederland**; vaste tarieven voor BE, DE, LU, FR, AT (aan te passen in het adminpaneel).
 - **Drie talen**: Nederlands (standaard), Engels, Oekraïens.
 - Winkelmand blijft bewaard (localStorage), responsive tot mobiel.
 
-## Lokaal starten
+## Adminpaneel
 
-ES-modules werken niet via `file://`, dus start een lokale webserver:
+Op `/admin` beheer je producten, prijzen, foto's, verzendkosten en zie je bestellingen.
+
+**Beveiliging**
+- Wachtwoord wordt alleen als scrypt-hash opgeslagen (in `.env` / omgevingsvariabelen), nooit in git.
+- Sessie via `HttpOnly`, `SameSite=Strict` cookie (en `Secure` + `__Host-` in productie); uitloggen na 2 uur inactiviteit, maximaal 12 uur.
+- Bescherming tegen brute force: 5 foute pogingen per IP → 15 minuten geblokkeerd; 30 foute pogingen in totaal → alle logins 15 minuten geblokkeerd.
+- CSRF-token + Origin-controle op elke wijziging; strikte Content-Security-Policy en andere security-headers.
+- Alle invoer wordt op de server gevalideerd; uploads alleen echte JPG/PNG/WebP (gecontroleerd op inhoud), max. 8 MB, willekeurige bestandsnaam.
+- Bij elke wijziging wordt een back-up van de catalogus bewaard in `data/backups/` (laatste 200). Alle acties staan in `data/audit.log`.
+- Prijzen en de eerste-bestelling-korting worden bij een bestelling altijd op de server berekend.
+
+**Login instellen of wijzigen**
 
 ```bash
-npx http-server -p 8080
-# of: python3 -m http.server 8080
+npm run set-admin
 ```
 
-Open daarna http://localhost:8080.
+Dit vraagt om gebruikersnaam en wachtwoord, schrijft `ADMIN_USER` en `ADMIN_PASSWORD_HASH` naar `.env` en toont de waarden om bij je hosting in te stellen.
+
+## Lokaal starten
+
+Vereist Node.js 20.12 of nieuwer.
+
+```bash
+npm install
+npm run set-admin   # eenmalig
+npm start
+```
+
+Winkel: http://localhost:8080 · Admin: http://localhost:8080/admin
 
 ## Publiceren
 
-Alles is statisch, dus werkt direct op GitHub Pages, Netlify, Vercel of elke andere hosting.
-Lettertypen (Instrument Serif, Inter Tight, Cormorant Garamond voor Cyrillisch) staan in `assets/fonts/`,
-dus er worden geen externe diensten zoals Google Fonts geladen (prettig voor de AVG/GDPR).
+De site heeft nu een (kleine) Node.js-server nodig — GitHub Pages volstaat niet meer.
+Geschikt: Render, Railway, Fly.io, een VPS (bijv. Hetzner) enz.
 
-## Foto's toevoegen
-
-1. Zet je foto's in `assets/img/lamps/` (bijv. `nova.jpg`, `nova-terracotta.jpg`). Staand formaat 4:5 werkt het mooist.
-2. Zet ze in `PHOTOS` in `assets/js/catalog.js`:
-
-```js
-export const PHOTOS = {
-  nova: {
-    default: 'assets/img/lamps/nova.jpg',              // voor alle kleuren
-    terracotta: 'assets/img/lamps/nova-terracotta.jpg', // alleen voor Terracotta
-  },
-  ...
-};
-```
-
-Kleur-id's: `ivory, sand, blush, terracotta, ochre, sage, forest, ocean, midnight, graphite`.
+Belangrijk:
+- **Altijd via HTTPS** en met `NODE_ENV=production`.
+- Stel de omgevingsvariabelen `ADMIN_USER` en `ADMIN_PASSWORD_HASH` in (uit `npm run set-admin`).
+- Gebruik **permanente opslag** voor de map `data/` (of zet `DATA_DIR` naar een permanent volume), anders gaan producten, foto's en bestellingen verloren bij een herstart.
+- Achter een proxy/loadbalancer: `TRUST_PROXY=1` (standaard in productie).
 
 ## Structuur
 
 ```
-index.html              pagina-opbouw
-assets/css/style.css    vormgeving
-assets/css/fonts.css    lettertypen (lokaal)
-assets/js/catalog.js    producten, kleuren, maten, prijzen, foto's
-assets/js/cart.js       winkelmand, korting, verzendkosten, bestelling
-assets/js/postcode.js   adres opzoeken via PDOK
-assets/js/i18n.js       vertalingen NL / EN / UA
-assets/js/main.js       koppelt alles aan de interface
+server/server.js        webserver, API en beveiliging
+server/auth.js          wachtwoord-hash, sessies, brute-force-bescherming
+server/store.js         opslag (JSON) met back-ups
+server/validate.js      invoercontrole en prijsberekening
+server/seed-catalog.json   startcatalogus (eerste start)
+scripts/set-admin.js    login instellen
+public/                 de winkel (HTML/CSS/JS) en public/admin/ (adminpaneel)
+data/                   (niet in git) catalogus, bestellingen, foto's, back-ups, logboek
 ```
 
-Een product toevoegen of een prijs wijzigen: pas `PRODUCTS` in `assets/js/catalog.js` aan.
+## Nog te doen voor echte verkoop
 
-## Voordat je live gaat
-
-Dit is de volledige front-end. Voor echte verkoop ontbreekt nog een kleine back-end:
-
-1. **Betalen** — koppel bijvoorbeeld [Mollie](https://www.mollie.com/) (iDEAL, kaart, Bancontact) of Stripe. Nu wordt een bestelling alleen lokaal opgeslagen en wordt een bevestiging getoond.
-2. **Eerste-bestelling-korting controleren op de server** — de site onthoudt eerdere bestellingen alleen in de browser van de klant. Controleer bij het aanmaken van de betaling op de server of het e-mailadres al eerder heeft besteld, en bereken daar ook het eindbedrag.
-3. **Bestelbevestiging per e-mail** en een overzicht van bestellingen voor jezelf.
-4. Echte contactgegevens in de footer (`hello@lumi.example` is een placeholder), algemene voorwaarden en privacyverklaring.
+1. **Betalen** — koppel bijvoorbeeld [Mollie](https://www.mollie.com/) (iDEAL, kaart, Bancontact).
+2. **Bevestigingsmail** naar klant en naar jezelf.
+3. Echte contactgegevens in de footer (`hello@lumi.example`), algemene voorwaarden en privacyverklaring.

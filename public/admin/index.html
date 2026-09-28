@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>LUMI — Адмінка</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/assets/css/fonts.css">
+  <link rel="stylesheet" href="/admin/admin.css">
+  <script type="module" src="/admin/admin.js"></script>
+</head>
+<body>
+  <!-- Login -->
+  <main class="login" id="loginView" hidden>
+    <form class="login__card" id="loginForm" autocomplete="on">
+      <p class="brand">LUMI</p>
+      <h1>Вхід в адмінку</h1>
+      <label class="field"><span>Логін</span><input name="username" autocomplete="username" required maxlength="256"></label>
+      <label class="field"><span>Пароль</span><input name="password" type="password" autocomplete="current-password" required maxlength="256"></label>
+      <p class="error" id="loginError" role="alert"></p>
+      <button class="btn btn--dark" type="submit">Увійти</button>
+    </form>
+  </main>
+
+  <!-- App -->
+  <div class="app" id="appView" hidden>
+    <header class="top">
+      <p class="brand">LUMI <span>адмінка</span></p>
+      <nav class="tabs" role="tablist">
+        <button type="button" data-tab="products" class="is-active">Товари</button>
+        <button type="button" data-tab="settings">Ціни й доставка</button>
+        <button type="button" data-tab="orders">Замовлення</button>
+      </nav>
+      <div class="top__actions">
+        <a href="/" target="_blank" rel="noopener">Відкрити магазин ↗</a>
+        <button class="btn btn--line btn--sm" type="button" id="logout">Вийти</button>
+      </div>
+    </header>
+
+    <section class="panel" data-panel="products">
+      <div class="panel__head">
+        <h2>Товари</h2>
+        <button class="btn btn--dark" type="button" id="addProduct">+ Додати товар</button>
+      </div>
+      <p class="hint">Змініть ціну прямо в таблиці та натисніть «Зберегти», або відкрийте товар для всіх налаштувань.</p>
+      <div class="table-wrap"><table class="table" id="productTable"></table></div>
+    </section>
+
+    <section class="panel" data-panel="settings" hidden>
+      <div class="panel__head"><h2>Ціни й доставка</h2></div>
+      <form id="settingsForm" class="settings">
+        <fieldset>
+          <legend>Доплата за розмір (€)</legend>
+          <p class="hint">Додається до ціни товару. Від’ємне число — знижка (наприклад, −20 для S).</p>
+          <div class="grid3" id="sizeFields"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Доставка (€)</legend>
+          <p class="hint">По Нідерландах доставка завжди безкоштовна.</p>
+          <div class="grid3" id="shippingFields"></div>
+        </fieldset>
+        <button class="btn btn--dark" type="submit">Зберегти</button>
+      </form>
+    </section>
+
+    <section class="panel" data-panel="orders" hidden>
+      <div class="panel__head"><h2>Замовлення</h2></div>
+      <div class="table-wrap"><table class="table" id="orderTable"></table></div>
+    </section>
+  </div>
+
+  <!-- Product editor -->
+  <dialog class="editor" id="editor">
+    <form id="productForm" novalidate>
+      <div class="editor__head">
+        <h2 id="editorTitle">Товар</h2>
+        <button class="icon-btn" type="button" data-close aria-label="Закрити">✕</button>
+      </div>
+      <div class="editor__body">
+        <div class="grid2">
+          <label class="field"><span>Назва</span><input name="name" required maxlength="60"></label>
+          <label class="field"><span>Тип</span>
+            <select name="type"><option value="table">Настільна лампа</option><option value="pendant">Підвісна лампа</option></select>
+          </label>
+          <label class="field"><span>Ціна, € (розмір M)</span><input name="price" inputmode="decimal" required></label>
+          <label class="field"><span>Колір за замовчуванням</span><select name="defaultColor" id="defaultColor"></select></label>
+          <label class="field"><span>Висота, см (M)</span><input name="heightCm" inputmode="numeric" required></label>
+          <label class="field"><span>Діаметр, см (M)</span><input name="diameterCm" inputmode="numeric" required></label>
+          <label class="field"><span>Час друку, год</span><input name="printHours" inputmode="numeric" required></label>
+          <label class="check"><input type="checkbox" name="visible"> <span>Показувати в магазині</span></label>
+        </div>
+        <label class="field"><span>Опис — нідерландською</span><textarea name="tagline_nl" rows="2" maxlength="300"></textarea></label>
+        <label class="field"><span>Опис — англійською</span><textarea name="tagline_en" rows="2" maxlength="300"></textarea></label>
+        <label class="field"><span>Опис — українською</span><textarea name="tagline_uk" rows="2" maxlength="300"></textarea></label>
+
+        <h3>Фото</h3>
+        <p class="hint">«Основне» показується для всіх кольорів. Додайте фото для конкретного кольору, якщо воно є. JPG, PNG або WebP до 8 МБ, краще вертикальне 4:5.</p>
+        <div class="photos" id="photoGrid"></div>
+      </div>
+      <div class="editor__foot">
+        <p class="error" id="productError" role="alert"></p>
+        <button class="btn btn--line" type="button" data-close>Скасувати</button>
+        <button class="btn btn--dark" type="submit">Зберегти</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

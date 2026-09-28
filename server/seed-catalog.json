@@ -1,0 +1,223 @@
+{
+  "colors": [
+    {
+      "id": "ivory",
+      "hex": "#EAE3D4",
+      "name": {
+        "nl": "Ivoor",
+        "en": "Ivory",
+        "uk": "Слонова кістка"
+      }
+    },
+    {
+      "id": "sand",
+      "hex": "#D6C2A1",
+      "name": {
+        "nl": "Zand",
+        "en": "Sand",
+        "uk": "Пісок"
+      }
+    },
+    {
+      "id": "blush",
+      "hex": "#DDB0A2",
+      "name": {
+        "nl": "Roze klei",
+        "en": "Clay pink",
+        "uk": "Рожева глина"
+      }
+    },
+    {
+      "id": "terracotta",
+      "hex": "#B8653F",
+      "name": {
+        "nl": "Terracotta",
+        "en": "Terracotta",
+        "uk": "Теракота"
+      }
+    },
+    {
+      "id": "ochre",
+      "hex": "#C99A3E",
+      "name": {
+        "nl": "Oker",
+        "en": "Ochre",
+        "uk": "Охра"
+      }
+    },
+    {
+      "id": "sage",
+      "hex": "#A3AD93",
+      "name": {
+        "nl": "Salie",
+        "en": "Sage",
+        "uk": "Шавлія"
+      }
+    },
+    {
+      "id": "forest",
+      "hex": "#46594A",
+      "name": {
+        "nl": "Woud",
+        "en": "Forest",
+        "uk": "Лісовий"
+      }
+    },
+    {
+      "id": "ocean",
+      "hex": "#4A6F87",
+      "name": {
+        "nl": "Oceaan",
+        "en": "Ocean",
+        "uk": "Океан"
+      }
+    },
+    {
+      "id": "midnight",
+      "hex": "#27304A",
+      "name": {
+        "nl": "Middernacht",
+        "en": "Midnight",
+        "uk": "Опівніч"
+      }
+    },
+    {
+      "id": "graphite",
+      "hex": "#3B3A38",
+      "name": {
+        "nl": "Grafiet",
+        "en": "Graphite",
+        "uk": "Графіт"
+      }
+    }
+  ],
+  "sizes": [
+    {
+      "id": "S",
+      "scale": 0.8,
+      "priceDelta": -20
+    },
+    {
+      "id": "M",
+      "scale": 1,
+      "priceDelta": 0
+    },
+    {
+      "id": "L",
+      "scale": 1.3,
+      "priceDelta": 40
+    }
+  ],
+  "shipping": {
+    "NL": 0,
+    "BE": 6.95,
+    "DE": 7.95,
+    "LU": 9.95,
+    "FR": 12.95,
+    "AT": 12.95
+  },
+  "products": [
+    {
+      "id": "nova",
+      "name": "Nova",
+      "type": "table",
+      "price": 129,
+      "heightCm": 28,
+      "diameterCm": 26,
+      "printHours": 14,
+      "defaultColor": "terracotta",
+      "tagline": {
+        "nl": "Een gloeiende bol met spiraalribben die het licht laten draaien.",
+        "en": "A glowing orb with spiral ribs that make the light swirl.",
+        "uk": "Сяюча куля зі спіральними ребрами, що закручують світло."
+      },
+      "visible": true,
+      "photos": {}
+    },
+    {
+      "id": "dune",
+      "name": "Dune",
+      "type": "table",
+      "price": 149,
+      "heightCm": 38,
+      "diameterCm": 20,
+      "printHours": 19,
+      "defaultColor": "sand",
+      "tagline": {
+        "nl": "Golvende ribben, geïnspireerd op door de wind gevormde duinen.",
+        "en": "Undulating ribs inspired by wind-shaped dunes.",
+        "uk": "Хвилясті ребра, натхненні дюнами, які формує вітер."
+      },
+      "visible": true,
+      "photos": {}
+    },
+    {
+      "id": "bloom",
+      "name": "Bloom",
+      "type": "pendant",
+      "price": 169,
+      "heightCm": 24,
+      "diameterCm": 42,
+      "printHours": 22,
+      "defaultColor": "blush",
+      "tagline": {
+        "nl": "Een hanglamp als een openvallende bloem, met zes zachte bloembladen.",
+        "en": "A pendant like an opening flower, with six soft petals.",
+        "uk": "Підвісна лампа, мов квітка, що розкривається, — шість м’яких пелюсток."
+      },
+      "visible": true,
+      "photos": {}
+    },
+    {
+      "id": "helix",
+      "name": "Helix",
+      "type": "table",
+      "price": 119,
+      "heightCm": 34,
+      "diameterCm": 18,
+      "printHours": 12,
+      "defaultColor": "ocean",
+      "tagline": {
+        "nl": "Een gedraaide zeshoek: strak van dichtbij, vloeiend van een afstand.",
+        "en": "A twisted hexagon: crisp up close, fluid from afar.",
+        "uk": "Закручений шестикутник: чіткий зблизька, плавний здалеку."
+      },
+      "visible": true,
+      "photos": {}
+    },
+    {
+      "id": "strata",
+      "name": "Strata",
+      "type": "pendant",
+      "price": 179,
+      "heightCm": 22,
+      "diameterCm": 46,
+      "printHours": 24,
+      "defaultColor": "ochre",
+      "tagline": {
+        "nl": "Terrassen van licht — een koepel opgebouwd uit gestapelde ringen.",
+        "en": "Terraces of light — a dome built from stacked rings.",
+        "uk": "Тераси світла — купол зі складених кілець."
+      },
+      "visible": true,
+      "photos": {}
+    },
+    {
+      "id": "ripple",
+      "name": "Ripple",
+      "type": "table",
+      "price": 139,
+      "heightCm": 30,
+      "diameterCm": 24,
+      "printHours": 16,
+      "defaultColor": "sage",
+      "tagline": {
+        "nl": "Een gebreide textuur van golven die het licht zacht verstrooit.",
+        "en": "A knitted texture of ripples that softly diffuses the light.",
+        "uk": "В’язана текстура хвиль, що м’яко розсіює світло."
+      },
+      "visible": true,
+      "photos": {}
+    }
+  ]
+}
