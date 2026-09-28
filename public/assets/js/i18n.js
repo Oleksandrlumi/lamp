@@ -7,6 +7,7 @@ const STRINGS = {
     'nav.faq': 'Vragen',
     'nav.cart': 'Winkelmand',
     'logo.sub': 'Sculpturaal licht',
+    'banner.alt': 'Sculpturale LUMI-lamp in een licht interieur',
     'filter.label': 'Bekijk in kleur',
     'filter.reset': 'Origineel',
     'hero.title': 'Licht als <em>sculptuur</em>.',
@@ -131,6 +132,7 @@ const STRINGS = {
     'nav.faq': 'FAQ',
     'nav.cart': 'Cart',
     'logo.sub': 'Sculptural light',
+    'banner.alt': 'Sculptural LUMI lamp in a bright interior',
     'filter.label': 'Preview in colour',
     'filter.reset': 'Original',
     'hero.title': 'Light as <em>sculpture</em>.',
@@ -290,6 +292,9 @@ export function applyTranslations(root = document) {
   });
   root.querySelectorAll('[data-i18n-html]').forEach((el) => {
     el.innerHTML = t(el.dataset.i18nHtml);
+  });
+  root.querySelectorAll('[data-i18n-alt]').forEach((el) => {
+    el.setAttribute('alt', t(el.dataset.i18nAlt));
   });
   root.querySelectorAll('[data-i18n-aria]').forEach((el) => {
     el.setAttribute('aria-label', t(el.dataset.i18nAria));
