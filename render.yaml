@@ -4,6 +4,7 @@ services:
   - type: web
     name: lumi-shop
     runtime: node
+    region: frankfurt       # close to the Netherlands, EU data
     plan: starter            # a paid plan is required for a persistent disk
     buildCommand: npm ci --omit=dev
     startCommand: npm start
