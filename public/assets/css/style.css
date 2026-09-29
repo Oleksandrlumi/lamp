@@ -173,9 +173,6 @@ p { margin: 0; }
 .banner__night, [data-theme='night'] .banner__day { display: none; }
 [data-theme='night'] .banner__night { display: block; }
 @keyframes banner-in { from { opacity: 0; } }
-@media (max-width: 700px) {
-  .banner img { aspect-ratio: 4 / 3; }
-}
 
 /* ---------- Shop bar & colour preview ---------- */
 .shopbar {
